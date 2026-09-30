@@ -1,0 +1,26 @@
+tipo,pagina,canal,estado_en_hoja,etapa_nueva,entregada_el,fecha_entrega,url_hoja,wp_page_id,nota,nota_se_importa_como,observacion
+Páginas Principales,404 — Surface Failure,,En Producción,Publicado,2026-08-22,,https://www.welovepaving.com/?page_id=109513&preview=true,109513,,,
+Páginas Principales,Thank You — Message Received,,En Producción,Publicado,2026-08-22,,https://www.welovepaving.com/?page_id=109693&preview=true,109693,,,
+Páginas Principales,Home — V2,,En Producción,Publicado,2026-08-26,,https://www.welovepaving.com/?page_id=110308&preview=true,110308,"Se está revisando el rendimiento, se quitó la imagen del hero en celular",Decisión técnica + Ajuste abierto (rendimiento),
+Páginas Principales,Get a Free Proposal — Contacto,,En Producción,Publicado,2026-08-26,,https://www.welovepaving.com/?page_id=112378&preview=true,112378,Se quedó el rendimiento como bloque de código que carga CSS; hay que ver si es la mejor opción o cargarlo desde un hook,Decisión técnica + Ajuste abierto (CSS vía hook),
+Páginas Principales,Services — V2,,En Producción,Publicado,2026-08-28,,https://www.welovepaving.com/?page_id=113050&preview=true,113050,"El mapa es un iframe con carga diferida y tarda en cargar; mejor colocar una imagen diluida. Además el código daba tiempo a cargar el hero, pero WP Rocket ya lo carga una vez diferido",Decisión técnica + Ajuste abierto (mapa como imagen),
+Páginas Principales,Testimonials — V2,,En Producción,Publicado,2026-08-31,,https://www.welovepaving.com/?page_id=113239&preview=true#t-03,113239,"Que no sea un deslizamiento, sino que carguen todas al mismo tiempo",Ajuste abierto (feedback),URL con ancla #t-03
+Páginas Principales,Our Areas of Expertise — V2,,En Producción,Publicado,2026-09-24,,https://www.welovepaving.com/?page_id=113809&preview=true,113809,,,
+Páginas Principales,Service Areas — V2,,En Producción,Publicado,2026-09-24,,https://www.welovepaving.com/?page_id=114037&preview=true,114037,,,
+Páginas Principales,Projects — V2,,En Producción,Publicado,2026-09-03,,https://www.welovepaving.com/?page_id=114166&preview=true,114166,"Los proyectos más visuales, ya que se siente solo una vista de lista",Ajuste abierto (feedback),
+Páginas Principales,About Us — V2,,En revisión,Cambios solicitados,2026-09-24,,https://www.welovepaving.com/?page_id=114319&preview=true,114319,Revisar rendimiento y detalles de la página,Feedback de Revisión #1,
+Páginas Principales,Project Gallery — V2,,En revisión,Revisión Admin,2026-09-24,,https://www.welovepaving.com/?page_id=114475&preview=true,114475,,,
+Páginas Principales,The Paving Panda Pledge,,En revisión,Cambios solicitados,2026-09-24,,https://www.welovepaving.com/careers-v2/,,"Revisar la saturación, colores amarillos y negro de alerta, y revisar las secciones con colores claros",Feedback de Revisión #1,El enlace es el mismo que Careers — V2: revisar
+Páginas Principales,Careers — V2,,En revisión,Cambios solicitados,2026-09-24,,https://www.welovepaving.com/careers-v2/,,"Las tarjetas de roles se ven bien, pero mucha saturación en las tarjetas de las secciones inferiores",Feedback de Revisión #1,
+Páginas Principales,Empleos — V2,,En revisión,Cambios solicitados,2026-09-25,,https://www.welovepaving.com/empleos-v2/,,Revisar la imagen del hero y la saturación de colores negro y amarillo,Feedback de Revisión #1,
+Páginas Principales,Corporate Information — V2,,En revisión,Revisión Admin,2026-09-25,,https://www.welovepaving.com/corporate-information-v2/,,,,
+Páginas Principales,Our Values — V2,,En progreso,En curso,,,https://www.welovepaving.com/?page_id=119440&preview=true#safety-,119440,,,URL con ancla #safety-
+Páginas Principales,Contractor Partnership — V2,,En progreso,En curso,,,http://welovepaving.com/?page_id=119455&preview=true,119455,,,URL en http sin www
+Servicios Core,ADA Upgrades — V2,,En revisión,Revisión Admin,2026-09-25,,https://www.welovepaving.com/?page_id=114631&preview=true,114631,,,
+Empleos,Business Development Sales,,En progreso,En curso,,,https://www.welovepaving.com/business-development-sales-v2/,,,,
+Empleos,Bilingual Office Staff,,En progreso,En curso,,,https://www.welovepaving.com/?page_id=119434&preview=true,119434,,,
+Empleos,CDL Commercial Drivers,,En progreso,En curso,,,https://www.welovepaving.com/?page_id=119464&preview=true,119464,,,
+Empleos,Especialista en Concreto y Formas,,En progreso,En curso,,,https://www.welovepaving.com/?page_id=120082&preview=true,120082,,,
+Landing Pages,LP Concrete — Service Finder,Bing,Publicado,Publicado,,2026-09-24,https://www.welovepaving.com/lp-concrete-service-finder/,,,,
+Landing Pages,LP Concrete — Construction,Bing,Publicado,Publicado,,2026-09-24,https://www.welovepaving.com/lp-concrete-construction/,,,,
+Landing Pages,LP Concrete — Repair,Bing,Publicado,Publicado,,2026-09-24,https://www.welovepaving.com/lp-concrete-repair/,,,,
