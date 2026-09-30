@@ -18,7 +18,8 @@ export default async function Revisiones() {
 
   return (
     <>
-      <PageHeader title="Revisiones" subtitle="Lo que está esperando al Admin y lo que regresó con cambios" />
+      <PageHeader eyebrow="Admin"
+        title="Revisiones" subtitle="Lo que está esperando al Admin y lo que regresó con cambios" />
       <div className="grid gap-4 lg:grid-cols-2">
         <Card title={`Esperando al Admin · ${waiting.length}`}>
           {waiting.length ? (

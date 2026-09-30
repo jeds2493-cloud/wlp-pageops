@@ -17,8 +17,9 @@ export default async function Inicio() {
   return (
     <>
       <PageHeader
+        eyebrow={now.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" })}
         title="Inicio"
-        subtitle={now.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" })}
+        subtitle="Lo que necesita tu atención hoy"
       />
 
       <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -26,10 +27,10 @@ export default async function Inicio() {
           <Link
             key={s}
             href={`/paginas?etapa=${encodeURIComponent(s)}`}
-            className="rounded-lg border border-stone-200 bg-white p-4 hover:border-stone-300"
+            className="group rounded-wlp border border-stone-200 bg-white p-5 transition hover:border-stone-900"
           >
-            <div className="text-2xl font-semibold tabular-nums">{byStage[s] ?? 0}</div>
-            <div className="mt-1">
+            <div className="font-display text-5xl leading-none font-extrabold tabular-nums">{byStage[s] ?? 0}</div>
+            <div className="mt-3">
               <StagePill stage={s} />
             </div>
           </Link>

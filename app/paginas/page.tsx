@@ -36,7 +36,7 @@ export default async function PaginasPage({ searchParams }: PageProps<"/paginas"
 
   return (
     <>
-      <PageHeader title="Páginas" subtitle={`${all.length} páginas dadas de alta`} />
+      <PageHeader eyebrow="Producción web" title="Páginas" subtitle={`${all.length} páginas dadas de alta`} />
 
       <div className="mb-4 flex gap-1 overflow-x-auto border-b border-stone-200">
         {[undefined, ...PAGE_TYPES].map((t) => {
@@ -46,7 +46,7 @@ export default async function PaginasPage({ searchParams }: PageProps<"/paginas"
               key={t ?? "todas"}
               href={href(t)}
               className={`-mb-px whitespace-nowrap border-b-2 px-3 py-2 text-sm ${
-                active ? "border-stone-900 font-medium text-stone-900" : "border-transparent text-stone-500 hover:text-stone-800"
+                active ? "border-wlp-yellow font-semibold text-stone-900" : "border-transparent text-stone-500 hover:text-stone-800"
               }`}
             >
               {t ?? "Todas"}{" "}
@@ -59,7 +59,7 @@ export default async function PaginasPage({ searchParams }: PageProps<"/paginas"
       <div className="mb-4 flex flex-wrap gap-1.5">
         <Link
           href={href(tipo)}
-          className={`rounded-full px-2.5 py-1 text-xs ${!etapa ? "bg-stone-900 text-white" : "bg-white text-stone-600 ring-1 ring-stone-200 hover:bg-stone-100"}`}
+          className={`rounded-full px-2.5 py-1 text-xs ${!etapa ? "bg-wlp-dark text-white" : "bg-white text-stone-600 ring-1 ring-stone-200 hover:bg-stone-100"}`}
         >
           Todas las etapas
         </Link>
@@ -67,18 +67,18 @@ export default async function PaginasPage({ searchParams }: PageProps<"/paginas"
           <Link
             key={s}
             href={href(tipo, s)}
-            className={`rounded-full px-2.5 py-1 text-xs ${etapa === s ? "bg-stone-900 text-white" : "bg-white text-stone-600 ring-1 ring-stone-200 hover:bg-stone-100"}`}
+            className={`rounded-full px-2.5 py-1 text-xs ${etapa === s ? "bg-wlp-dark text-white" : "bg-white text-stone-600 ring-1 ring-stone-200 hover:bg-stone-100"}`}
           >
             {s}
           </Link>
         ))}
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-stone-200 bg-white">
+      <div className="overflow-x-auto rounded-wlp border border-stone-200 bg-white">
         <table className="w-full min-w-[720px] text-sm">
           <thead>
-            <tr className="border-b border-stone-200 text-left text-xs font-medium text-stone-500">
-              <th className="px-4 py-2.5 font-medium">Página</th>
+            <tr className="border-b border-stone-200 text-left font-mono text-[10.5px] tracking-[0.1em] text-stone-500 uppercase">
+              <th className="px-5 py-3 font-medium">Página</th>
               <th className="px-3 py-2.5 font-medium">Etapa</th>
               <th className="px-3 py-2.5 font-medium">En esta etapa</th>
               <th className="px-3 py-2.5 font-medium">Entregada</th>
@@ -95,8 +95,8 @@ export default async function PaginasPage({ searchParams }: PageProps<"/paginas"
               const adj = openAdjustments(p).length;
               return (
                 <tr key={p.id} className="border-b border-stone-100 last:border-0 hover:bg-stone-50">
-                  <td className="px-4 py-2.5">
-                    <Link href={`/paginas/${p.id}`} className="font-medium text-stone-900 hover:underline">
+                  <td className="px-5 py-3">
+                    <Link href={`/paginas/${p.id}`} className="font-semibold text-stone-900 decoration-wlp-yellow decoration-2 underline-offset-4 hover:underline">
                       {p.title}
                     </Link>
                     <div className="text-xs text-stone-400">

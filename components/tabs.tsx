@@ -16,7 +16,7 @@ export function Tabs({ tabs }: { tabs: { id: string; label: string; count?: numb
             onClick={() => setActive(t.id)}
             className={`-mb-px whitespace-nowrap border-b-2 px-3 py-2 text-sm ${
               t.id === current.id
-                ? "border-stone-900 font-medium text-stone-900"
+                ? "border-wlp-yellow font-semibold text-stone-900"
                 : "border-transparent text-stone-500 hover:text-stone-800"
             }`}
           >

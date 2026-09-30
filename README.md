@@ -20,3 +20,11 @@ npm run dev   # http://localhost:3000
 ## Deploy en Netlify
 
 Netlify → Add new site → Import from GitHub → `wlp-pageops`. Netlify detecta Next.js y usa `netlify.toml`.
+
+## Diseño
+
+Usa el sistema de diseño del sitio de WLP (tokens de `css/styles.css` en
+`welovepaving-prototype`): Barlow Semi Condensed para títulos, Inter para texto,
+IBM Plex Mono para etiquetas, amarillo `#F2C230`, negro cálido `#14120E` y fondo
+crema `#F2F1EF`. Los tokens viven en `app/globals.css`; la escala `stone` de
+Tailwind está remapeada a los grises cálidos de WLP.

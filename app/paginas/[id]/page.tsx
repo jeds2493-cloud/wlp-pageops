@@ -28,7 +28,7 @@ function Stepper({ stage }: { stage: Stage }) {
           <span
             className={`rounded-full px-2 py-0.5 ${
               i === idx
-                ? "bg-stone-900 font-medium text-white"
+                ? "bg-wlp-dark font-semibold text-wlp-yellow"
                 : i < idx
                   ? "bg-stone-200 text-stone-600"
                   : "text-stone-400 ring-1 ring-inset ring-stone-200"
@@ -92,15 +92,15 @@ export default async function PaginaDetalle({ params }: PageProps<"/paginas/[id]
       </Link>
       <div className="mt-2 mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">{page.title}</h1>
+          <p className="eyebrow mb-2">{page.type}</p>
+          <h1 className="font-display text-4xl leading-none font-extrabold text-stone-900 uppercase">{page.title}</h1>
           <p className="mt-1 text-sm text-stone-500">
-            {page.type}
-            {page.channel && ` · Canal: ${page.channel}`}
-            {page.wpPageId && ` · WP #${page.wpPageId}`}
+            {page.channel && `Canal: ${page.channel} · `}
+            {page.wpPageId ? `WordPress #${page.wpPageId}` : "Sin ID de WordPress"}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <ExternalLink href={previewUrl(page)}>Preview</ExternalLink>
+          <ExternalLink href={previewUrl(page)} primary>Preview</ExternalLink>
           <ExternalLink href={editUrl(page)}>Editar en WP</ExternalLink>
           <ExternalLink href={page.publicUrl}>Pública</ExternalLink>
           <ExternalLink href={page.docsUrl}>Documentación</ExternalLink>
@@ -108,7 +108,7 @@ export default async function PaginaDetalle({ params }: PageProps<"/paginas/[id]
       </div>
 
       {page.importWarnings.length > 0 && (
-        <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        <div className="mb-4 rounded-wlp border border-wlp-yellow/60 bg-[#FDF3CF] px-5 py-3 text-sm text-[#6B4E00]">
           <p className="font-medium">Revisar al importar</p>
           <ul className="mt-1 list-disc pl-5">
             {page.importWarnings.map((w) => (
@@ -174,7 +174,7 @@ export default async function PaginaDetalle({ params }: PageProps<"/paginas/[id]
                 label: "Tareas",
                 count: tasks.length,
                 content: tasks.length ? (
-                  <ul className="divide-y divide-stone-100 rounded-lg border border-stone-200 bg-white">
+                  <ul className="divide-y divide-stone-100 rounded-wlp border border-stone-200 bg-white">
                     {tasks.map((t) => (
                       <li key={t.id} className="flex flex-wrap items-center gap-2 px-4 py-2.5 text-sm">
                         <span className={`size-4 shrink-0 rounded border ${t.done ? "border-emerald-500 bg-emerald-500" : "border-stone-300"}`} />

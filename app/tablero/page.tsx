@@ -12,6 +12,7 @@ export default async function Tablero() {
   return (
     <>
       <PageHeader
+        eyebrow="Producción web"
         title="Tablero"
         subtitle="Cada tarjeta es un trabajo (la página V2 o un ajuste). Arrastrar para cambiar de etapa llega en Fase 1."
       />
@@ -20,7 +21,7 @@ export default async function Tablero() {
           {COLUMNS.map((col) => {
             const items = cards.filter(({ w }) => w.stage === col);
             return (
-              <section key={col} className="w-64 shrink-0 rounded-lg bg-stone-100/70 p-2">
+              <section key={col} className="w-64 shrink-0 rounded-wlp bg-stone-100 p-2.5">
                 <header className="mb-2 flex items-center justify-between px-1">
                   <StagePill stage={col} />
                   <span className="text-xs text-stone-500">{items.length}</span>
@@ -32,7 +33,7 @@ export default async function Tablero() {
                       <li key={w.id}>
                         <Link
                           href={`/paginas/${p.id}`}
-                          className="block rounded-md border border-stone-200 bg-white p-2.5 text-sm shadow-xs hover:border-stone-300"
+                          className="block rounded-[10px] border border-stone-200 bg-white p-3 text-sm transition hover:border-stone-900"
                         >
                           <div className="font-medium leading-snug">{w.kind === "Ajuste" ? w.title : p.title}</div>
                           {w.kind === "Ajuste" && <div className="mt-0.5 text-xs text-stone-400">{p.title}</div>}
