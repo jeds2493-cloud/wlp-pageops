@@ -1,3 +1,7 @@
 [build]
   command = "npm run build"
   publish = ".next"
+
+# Runtime oficial de Netlify para Next.js (SSR, rutas dinámicas).
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
