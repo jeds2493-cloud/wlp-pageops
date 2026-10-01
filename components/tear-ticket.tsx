@@ -489,13 +489,13 @@ export function TearTicket({ ticket, pageTitle, pages }: { ticket: Ticket; pageT
 
   return (
     <li
-      className={`relative list-none transition-[opacity,transform] duration-300 ease-out ${grabbing ? "z-20" : ""}`}
+      className={`relative list-none transition-[opacity,transform] duration-300 ease-out ${grabbing ? "z-20" : ""} ${editing ? "col-span-full" : ""}`}
       style={gone ? { opacity: 0, transform: "scale(0.97)" } : undefined}
     >
       <div ref={rootRef} className="relative select-none" style={{ WebkitTapHighlightColor: "transparent" }}>
         {/* Cuerpo: en el flujo normal, así crece con el detalle */}
         <div ref={bodyRef} className="relative will-change-transform">
-          {geo && (
+          {geo && !editing && (
             <svg
               aria-hidden
               className="pointer-events-none absolute inset-0 z-10 size-full overflow-visible"
@@ -506,11 +506,11 @@ export function TearTicket({ ticket, pageTitle, pages }: { ticket: Ticket; pageT
           )}
           <article
             aria-label={`Ticket ${number}: ${ticket.title}`}
-            className="flex min-h-36 flex-col bg-white p-5 select-text"
+            className={`flex min-h-36 flex-col bg-white p-5 select-text ${editing ? "ring-1 ring-stone-200" : ""}`}
             style={{
-              paddingRight: STUB + 20,
-              clipPath: geo ? `path('${geo.body}')` : undefined,
-              borderRadius: geo ? undefined : RADIUS,
+              paddingRight: editing ? undefined : STUB + 20,
+              clipPath: geo && !editing ? `path('${geo.body}')` : undefined,
+              borderRadius: geo && !editing ? undefined : RADIUS,
             }}
           >
             {editing ? (
@@ -538,7 +538,7 @@ export function TearTicket({ ticket, pageTitle, pages }: { ticket: Ticket; pageT
                   <span className="sr-only">Detalle</span>
                   <textarea
                     name="detail"
-                    rows={4}
+                    rows={8}
                     defaultValue={ticket.detail ?? ""}
                     placeholder="Detalle (opcional)"
                     className={inputCls}
@@ -636,7 +636,7 @@ export function TearTicket({ ticket, pageTitle, pages }: { ticket: Ticket; pageT
         </svg>
 
         {/* Talón: se jala para cortarlo */}
-        {geo && (
+        {geo && !editing && (
           <div
             ref={stubRef}
             role="button"
