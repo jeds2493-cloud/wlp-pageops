@@ -35,7 +35,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         ) : (
         <>
           <header className="sticky top-0 z-30 border-b border-wlp-border-dark bg-wlp-dark text-stone-400">
-            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 px-4 py-2 md:px-10">
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-1.5 px-4 py-1.5 md:px-10">
               <Link href="/" className="flex items-center gap-2.5" aria-label="WLP PageOps, inicio">
                 <Image src="/wlp-logo.png" alt="" width={44} height={25} priority />
                 <span className="font-display text-lg font-extrabold tracking-wide text-white uppercase">PageOps</span>

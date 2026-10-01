@@ -13,7 +13,7 @@ const items = [
 export function Nav() {
   const pathname = usePathname();
   return (
-    <nav aria-label="Principal" className="flex gap-1 overflow-x-auto">
+    <nav aria-label="Principal" className="flex gap-1 overflow-x-auto overflow-y-hidden">
       {items.map((it) => {
         const active = it.match(pathname);
         const Icon = it.icon;
@@ -22,9 +22,9 @@ export function Nav() {
             key={it.href}
             href={it.href}
             aria-current={active ? "page" : undefined}
-            className={`relative inline-flex min-h-10 items-center gap-2 whitespace-nowrap rounded-lg px-3 text-sm font-medium transition-colors ${
+            className={`relative inline-flex min-h-9 items-center gap-2 whitespace-nowrap rounded-lg px-3 text-sm font-medium transition-colors ${
               active
-                ? "bg-wlp-dark-2 text-white after:absolute after:inset-x-3 after:-bottom-[9px] after:h-[3px] after:rounded-full after:bg-wlp-yellow"
+                ? "bg-wlp-dark-2 text-white after:absolute after:inset-x-3 after:bottom-0 after:h-[3px] after:rounded-full after:bg-wlp-yellow"
                 : "text-stone-400 hover:bg-wlp-dark-2 hover:text-white"
             }`}
           >
