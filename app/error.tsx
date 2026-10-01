@@ -1,10 +1,14 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useTransition } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { AlertTriangle, RotateCcw } from "lucide-react";
 
 /** Si algo falla en el servidor, se muestra el motivo en vez de una página caída. */
 export default function ErrorScreen({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+  const router = useRouter();
+  const [pending, start] = useTransition();
   useEffect(() => {
     console.error(error);
   }, [error]);
@@ -21,13 +25,25 @@ export default function ErrorScreen({ error, reset }: { error: Error & { digest?
         <p className="mt-3 rounded-lg bg-stone-100 px-3 py-2 font-mono text-xs text-stone-700">
           {error.digest ? `Código: ${error.digest}` : error.message}
         </p>
-        <button
-          type="button"
-          onClick={reset}
-          className="mt-5 inline-flex min-h-10 items-center gap-2 rounded-lg bg-wlp-yellow px-4 text-sm font-semibold text-stone-900 hover:bg-wlp-yellow-hover"
-        >
-          <RotateCcw aria-hidden className="size-4" /> Reintentar
-        </button>
+        <div className="mt-5 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            disabled={pending}
+            // Vuelve a pedir la pantalla al servidor, no solo a dibujarla.
+            onClick={() =>
+              start(() => {
+                router.refresh();
+                reset();
+              })
+            }
+            className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-wlp-yellow px-4 text-sm font-semibold text-stone-900 hover:bg-wlp-yellow-hover disabled:opacity-50"
+          >
+            <RotateCcw aria-hidden className="size-4" /> {pending ? "Reintentando…" : "Reintentar"}
+          </button>
+          <Link href="/" className="text-sm font-semibold text-stone-700 underline">
+            Ir a Páginas
+          </Link>
+        </div>
       </div>
     </div>
   );

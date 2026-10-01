@@ -22,12 +22,18 @@ const pageKey = (id: string) => `page/${id}`;
 function blobsBackend(): Backend | undefined {
   try {
     const store = getStore({ name: STORE_NAME, consistency: "strong" });
+    // Cada falla deja en el registro de Netlify (Logs → Functions) qué operación y
+    // qué clave fallaron; la pantalla de error solo muestra un código.
+    const traced = <T>(op: string, key: string, run: () => Promise<T>) =>
+      run().catch((err: unknown) => {
+        console.error(`[pageops] Blobs ${op} "${key}" falló:`, err);
+        throw err;
+      });
     return {
-      async get<T>(key: string) {
-        return ((await store.get(key, { type: "json" })) ?? undefined) as T | undefined;
-      },
-      set: (key, value) => store.setJSON(key, value).then(() => undefined),
-      del: (key) => store.delete(key),
+      get: <T>(key: string) =>
+        traced("get", key, async () => ((await store.get(key, { type: "json" })) ?? undefined) as T | undefined),
+      set: (key, value) => traced("set", key, () => store.setJSON(key, value).then(() => undefined)),
+      del: (key) => traced("delete", key, () => store.delete(key)),
     };
   } catch {
     // Fuera de Netlify no hay contexto de Blobs: se usa el archivo local.
@@ -130,6 +136,7 @@ export async function loadBackup(name: string): Promise<unknown> {
 async function upgrade(pages: Page[]): Promise<Page[]> {
   const stale = pages.filter((p) => (p.schema ?? 1) < SCHEMA);
   if (!stale.length) return pages;
+  console.info(`[pageops] Migrando ${stale.length} página(s) al formato ${SCHEMA}.`);
   await backupOnce(`antes-schema-${SCHEMA}`, structuredClone(pages));
   await Promise.all(stale.map((p) => db().set(pageKey(p.id), migrate(p))));
   return pages;
