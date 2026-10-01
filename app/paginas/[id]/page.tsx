@@ -479,9 +479,54 @@ export default async function PaginaDetalle({ params, searchParams }: PageProps<
               { id: "qa", label: qa.total ? `QA ${qa.done}/${qa.total}` : "QA", count: qa.failing || undefined, alert: qa.failing > 0, content: <QaTab page={page} w={w} /> },
             ]}
           />
+          <details id="config" className="group rounded-wlp border border-stone-200 bg-white">
+            <summary className="flex min-h-12 cursor-pointer items-center gap-2 px-5 text-sm font-semibold text-stone-800">
+              <Settings2 aria-hidden className="size-4" /> Configuración de la página
+              <span className="font-normal text-stone-500">título, tipo, ID de WordPress, URL y documentación</span>
+            </summary>
+            <div className="border-t border-stone-100 p-5">
+              <PageConfigForm pageId={page.id}>
+                <Field label="Título" className="sm:col-span-2">
+                  <input name="title" defaultValue={page.title} required className={inputCls} />
+                </Field>
+                <Field label="Tipo">
+                  <select name="type" defaultValue={page.type} className={inputCls}>
+                    {PAGE_TYPES.map((t) => (
+                      <option key={t}>{t}</option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label="Canal (solo landings)">
+                  <input name="channel" defaultValue={page.channel} className={inputCls} placeholder="Bing, Google…" />
+                </Field>
+                <Field label="ID o enlace de preview de WordPress">
+                  <input id="cfg-wp" name="wp" defaultValue={page.wpPageId} className={inputCls} placeholder="114631" />
+                </Field>
+                <Field label="URL pública">
+                  <input id="cfg-publicUrl" name="publicUrl" type="url" defaultValue={page.publicUrl} className={inputCls} placeholder="https://www.welovepaving.com/…" />
+                </Field>
+                <Field label="Documentación">
+                  <input id="cfg-docsUrl" name="docsUrl" type="url" defaultValue={page.docsUrl} className={inputCls} placeholder="Carpeta del reporte" />
+                </Field>
+              </PageConfigForm>
+              <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50/60 px-4 py-3">
+                <p className="text-sm text-stone-700">Eliminar la página borra sus trabajos, revisiones, notas y actividad.</p>
+                <ActionButton
+                  action={deletePage.bind(null, page.id)}
+                  confirmText={`¿Eliminar "${page.title}" con todo su historial? No se puede deshacer.`}
+                  className="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-red-300 bg-white px-4 text-sm font-semibold text-[#A32424] hover:bg-red-50"
+                >
+                  <Trash2 aria-hidden className="size-4" /> Eliminar página
+                </ActionButton>
+              </div>
+            </div>
+          </details>
         </div>
 
-        <aside className="space-y-4" aria-label="Notas y actividad de la página">
+        <aside
+          className="space-y-4 lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:self-start lg:overflow-y-auto lg:overscroll-contain"
+          aria-label="Notas y actividad de la página"
+        >
           <Card title="Notas">
             <div className="space-y-3">
               <NoteComposer pageId={page.id} actor={actor} />
@@ -489,13 +534,18 @@ export default async function PaginaDetalle({ params, searchParams }: PageProps<
                 <ul className="space-y-3">
                   {page.notes.map((n) => (
                     <li key={n.id} className="border-t border-stone-100 pt-3">
-                      <div className="mb-1 flex items-center gap-2 text-xs text-stone-500">
-                        <span className="font-semibold text-stone-700">{n.kind}</span>· {n.author} · {formatDateTime(n.createdAt)}
+                      <div className="mb-1 flex items-start gap-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-semibold text-stone-800">{n.kind}</p>
+                          <p className="text-xs text-stone-500">
+                            {n.author} · {formatDateTime(n.createdAt)}
+                          </p>
+                        </div>
                         <ActionButton
                           action={deleteNote.bind(null, page.id, n.id)}
                           confirmText="¿Eliminar esta nota?"
                           label="Eliminar nota"
-                          className="ml-auto rounded p-1 text-stone-500 hover:bg-stone-100 hover:text-wlp-red"
+                          className="rounded p-1 text-stone-500 hover:bg-stone-100 hover:text-wlp-red"
                         >
                           <Trash2 aria-hidden className="size-4" />
                         </ActionButton>
@@ -544,48 +594,6 @@ export default async function PaginaDetalle({ params, searchParams }: PageProps<
         </aside>
       </div>
 
-      <details id="config" className="group mt-8 rounded-wlp border border-stone-200 bg-white">
-        <summary className="flex min-h-12 cursor-pointer items-center gap-2 px-5 text-sm font-semibold text-stone-800">
-          <Settings2 aria-hidden className="size-4" /> Configuración de la página
-          <span className="font-normal text-stone-500">título, tipo, ID de WordPress, URL y documentación</span>
-        </summary>
-        <div className="border-t border-stone-100 p-5">
-          <PageConfigForm pageId={page.id}>
-            <Field label="Título" className="sm:col-span-2">
-              <input name="title" defaultValue={page.title} required className={inputCls} />
-            </Field>
-            <Field label="Tipo">
-              <select name="type" defaultValue={page.type} className={inputCls}>
-                {PAGE_TYPES.map((t) => (
-                  <option key={t}>{t}</option>
-                ))}
-              </select>
-            </Field>
-            <Field label="Canal (solo landings)">
-              <input name="channel" defaultValue={page.channel} className={inputCls} placeholder="Bing, Google…" />
-            </Field>
-            <Field label="ID o enlace de preview de WordPress">
-              <input id="cfg-wp" name="wp" defaultValue={page.wpPageId} className={inputCls} placeholder="114631" />
-            </Field>
-            <Field label="URL pública">
-              <input id="cfg-publicUrl" name="publicUrl" type="url" defaultValue={page.publicUrl} className={inputCls} placeholder="https://www.welovepaving.com/…" />
-            </Field>
-            <Field label="Documentación">
-              <input id="cfg-docsUrl" name="docsUrl" type="url" defaultValue={page.docsUrl} className={inputCls} placeholder="Carpeta del reporte" />
-            </Field>
-          </PageConfigForm>
-          <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50/60 px-4 py-3">
-            <p className="text-sm text-stone-700">Eliminar la página borra sus trabajos, revisiones, notas y actividad.</p>
-            <ActionButton
-              action={deletePage.bind(null, page.id)}
-              confirmText={`¿Eliminar "${page.title}" con todo su historial? No se puede deshacer.`}
-              className="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-red-300 bg-white px-4 text-sm font-semibold text-[#A32424] hover:bg-red-50"
-            >
-              <Trash2 aria-hidden className="size-4" /> Eliminar página
-            </ActionButton>
-          </div>
-        </div>
-      </details>
       </PageBody>
     </>
   );
