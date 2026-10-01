@@ -7,6 +7,15 @@ export interface QaGroup {
   items: string[];
 }
 
+/** Grupo de accesibilidad: alimenta el indicador WCAG de la tabla de páginas. */
+export const WCAG_GROUP = "Accesibilidad (WCAG)";
+export const WCAG_ITEMS = [
+  "Contraste AA: 4.5:1 en texto",
+  "Alt text en imágenes",
+  "Navegación con teclado y foco visible",
+  "Botones y enlaces con nombre claro",
+];
+
 // Checklist de aprobación: las reglas que se revisan en cada página de WLP.
 const base: QaGroup[] = [
   {
@@ -36,10 +45,11 @@ const base: QaGroup[] = [
     category: "SEO",
     items: ["Copy revisado", "CTAs y teléfono correctos", "Title y meta description", "Un solo H1 y slug final"],
   },
+  { group: "Técnico", category: "Bug", items: ["Enlaces probados", "Sin errores de consola"] },
   {
-    group: "Técnico y accesibilidad",
-    category: "Bug",
-    items: ["Enlaces probados", "Sin errores de consola", "Alt text y contraste"],
+    group: WCAG_GROUP,
+    category: "Accesibilidad",
+    items: WCAG_ITEMS,
   },
   { group: "Entrega", category: "WordPress", items: ["Reporte final con QR"] },
 ];

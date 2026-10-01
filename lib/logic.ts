@@ -1,4 +1,5 @@
 // Lógica pura (sin acceso a datos): se puede usar en servidor y en cliente.
+import { WCAG_GROUP } from "./templates";
 import type { Page, PageType, Stage, WorkItem } from "./types";
 
 const WP_ORIGIN = "https://www.welovepaving.com";
@@ -126,4 +127,22 @@ export function stageWarnings(page: Page, w: WorkItem, target: Stage): string[] 
     if (w.kind === "Página V2" && !page.publicUrl) out.push("Falta la URL pública de la página.");
   }
   return out;
+}
+
+export type CheckState = "pasa" | "no pasa" | "pendiente" | "sin checklist";
+
+/** Estado del QA completo: aprobado solo si todo pasa o no aplica. */
+export function qaState(w: WorkItem): CheckState {
+  const { total, failing, pending } = qaProgress(w);
+  if (!total) return "sin checklist";
+  if (failing) return "no pasa";
+  return pending ? "pendiente" : "pasa";
+}
+
+/** Estado de los puntos de accesibilidad (WCAG). */
+export function wcagState(w: WorkItem): CheckState {
+  const items = w.qa.filter((q) => q.group === WCAG_GROUP);
+  if (!items.length) return "sin checklist";
+  if (items.some((q) => q.status === "No pasa")) return "no pasa";
+  return items.some((q) => q.status === "Pendiente") ? "pendiente" : "pasa";
 }

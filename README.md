@@ -38,8 +38,8 @@ directo.
   migración, un cambio de formato), baja el respaldo desde la barra lateral
   (*Descargar respaldo*, `/respaldo`).
 - Las migraciones de formato guardan además un respaldo automático en Netlify Blobs,
-  una sola vez por migración: `backups/antes-schema-2` se descarga en
-  `/respaldo?copia=antes-schema-2`.
+  una sola vez por migración: `backups/antes-schema-2` y `backups/antes-schema-3`
+  se descargan en `/respaldo?copia=antes-schema-2` (o `-3`).
 - El almacén anterior al reinicio del 1 oct (`pageops`) sigue intacto.
 
 ## Si se cae

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { requirePage } from "@/lib/auth";
 import { connection } from "next/server";
 import { AlertTriangle, Plus, Search, X } from "lucide-react";
-import { Badge, Masthead, PageBody, StagePill, stageDot } from "@/components/ui";
+import { Badge, Masthead, PageBody, QaCell, StagePill, stageDot } from "@/components/ui";
 import {
   attention,
   daysSince,
@@ -11,6 +11,9 @@ import {
   mainWork,
   openAdjustments,
   pendingFeedback,
+  qaProgress,
+  qaState,
+  wcagState,
   stageSince,
 } from "@/lib/data";
 import { PAGE_TYPES, STAGES, type Page, type PageType, type Stage } from "@/lib/types";
@@ -188,7 +191,10 @@ export default async function PaginasHome({ searchParams }: PageProps<"/">) {
                       {fb > 0 && <span className="font-semibold text-[#6B4E00]">{fb} feedback</span>}
                     </p>
                   </div>
-                  <StagePill stage={w.stage} />
+                  <div className="flex shrink-0 flex-col items-end gap-1.5">
+                    <StagePill stage={w.stage} />
+                    <QaCell {...qaProgress(w)} qa={qaState(w)} wcag={wcagState(w)} />
+                  </div>
                 </Link>
               </li>
             );
@@ -196,7 +202,7 @@ export default async function PaginasHome({ searchParams }: PageProps<"/">) {
         </ul>
 
         <div className="hidden overflow-x-auto rounded-wlp border border-stone-200 bg-white md:block">
-          <table className="w-full min-w-[760px] text-sm">
+          <table className="w-full min-w-[860px] text-sm">
             <thead>
               <tr className="border-b border-stone-200 text-left text-xs text-stone-600">
                 <th scope="col" className="px-5 py-3 font-medium">Página</th>
@@ -204,6 +210,9 @@ export default async function PaginasHome({ searchParams }: PageProps<"/">) {
                 <th scope="col" className="px-3 py-3 text-right font-medium">En etapa</th>
                 <th scope="col" className="px-3 py-3 font-medium">Entrega</th>
                 <th scope="col" className="px-3 py-3 text-right font-medium">SP</th>
+                <th scope="col" className="px-3 py-3 font-medium">
+                  <abbr title="Checklist de QA y accesibilidad (WCAG)" className="no-underline">QA · WCAG</abbr>
+                </th>
                 <th scope="col" className="px-5 py-3 font-medium">Pendientes</th>
               </tr>
             </thead>
@@ -241,6 +250,9 @@ export default async function PaginasHome({ searchParams }: PageProps<"/">) {
                     </td>
                     <td className={`px-3 py-3 font-mono ${overdue ? "font-semibold text-[#A32424]" : "text-stone-700"}`}>{formatDate(w.dueDate)}</td>
                     <td className="px-3 py-3 text-right font-mono text-stone-700">{w.storyPoints ?? "—"}</td>
+                    <td className="px-3 py-3">
+                      <QaCell {...qaProgress(w)} qa={qaState(w)} wcag={wcagState(w)} />
+                    </td>
                     <td className="px-5 py-3">
                       <div className="flex flex-wrap gap-1">
                         {w.blocked && <Badge tone="warn">Bloqueada</Badge>}

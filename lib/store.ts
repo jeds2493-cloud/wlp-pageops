@@ -5,7 +5,8 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { getStore } from "@netlify/blobs";
 import { seedPages } from "./seed";
-import { LEGACY_QA_LABELS, qaItems } from "./templates";
+import { LEGACY_QA_LABELS, qaItems, WCAG_GROUP, WCAG_ITEMS } from "./templates";
+import type { QaItem } from "./types";
 import type { Page } from "./types";
 
 interface Backend {
@@ -99,7 +100,7 @@ function db(): Backend {
 // Antes de cambiar datos guardados se escribe un respaldo completo en el almacén
 // (backups/<nombre>), una sola vez por migración. Se descarga en /respaldo?copia=<nombre>.
 
-export const SCHEMA = 2;
+export const SCHEMA = 3;
 const BACKUP_PREFIX = "backups/";
 
 /** Formato 1 → 2: QA con Pasa / No pasa / No aplica y checklist de reglas WLP;
@@ -129,7 +130,45 @@ function migrate(p: Page): Page {
       });
     }
   }
-  p.schema = SCHEMA;
+  p.schema = 2;
+  return p;
+}
+
+const OLD_A11Y_LABEL = "Alt text y contraste";
+
+/** Formato 2 → 3: accesibilidad (WCAG) en su propio grupo de cuatro puntos. Lo que
+ *  estaba marcado en "Alt text y contraste" pasa a contraste y alt text. */
+function migrateTo3(p: Page): Page {
+  for (const w of p.works) {
+    if (!w.qa.length || w.qa.some((q) => q.group === WCAG_GROUP)) continue;
+    const old = w.qa.find((q) => q.label === OLD_A11Y_LABEL);
+    const kept = w.qa
+      .filter((q) => q.label !== OLD_A11Y_LABEL)
+      .map((q) => (q.group === "Técnico y accesibilidad" ? { ...q, group: "Técnico" } : q));
+    const wcag: QaItem[] = WCAG_ITEMS.map((label, i) => {
+      const inherits = old && i < 2; // contraste y alt text
+      return {
+        id: `${w.id}-wcag-${i}`,
+        group: WCAG_GROUP,
+        label,
+        status: inherits ? old.status : "Pendiente",
+        reason: inherits ? old.reason : undefined,
+        taskId: inherits && i === 0 ? old.taskId : undefined,
+      };
+    });
+    const task = w.tasks.find((t) => old && t.qaId === old.id);
+    if (task) task.qaId = wcag[0].id;
+    // El grupo WCAG va antes de "Entrega" para respetar el orden de la plantilla.
+    const at = kept.findIndex((q) => q.group === "Entrega");
+    w.qa = at < 0 ? [...kept, ...wcag] : [...kept.slice(0, at), ...wcag, ...kept.slice(at)];
+  }
+  p.schema = 3;
+  return p;
+}
+
+function migrateAll(p: Page): Page {
+  if ((p.schema ?? 1) < 2) migrate(p);
+  if ((p.schema ?? 1) < 3) migrateTo3(p);
   return p;
 }
 
@@ -148,7 +187,7 @@ async function upgrade(pages: Page[]): Promise<Page[]> {
   if (!stale.length) return pages;
   console.info(`[pageops] Migrando ${stale.length} página(s) al formato ${SCHEMA}.`);
   await backupOnce(`antes-schema-${SCHEMA}`, structuredClone(pages));
-  await Promise.all(stale.map((p) => db().set(pageKey(p.id), migrate(p))));
+  await Promise.all(stale.map((p) => db().set(pageKey(p.id), migrateAll(p))));
   return pages;
 }
 

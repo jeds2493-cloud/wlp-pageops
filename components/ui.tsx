@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { ExternalLink as ExternalIcon } from "lucide-react";
+import { Accessibility as AccessibilityIcon, Check as CheckIcon, ExternalLink as ExternalIcon } from "lucide-react";
 import type { Stage } from "@/lib/types";
 
 // "Revisión Admin" usa el amarillo de marca: es la etapa que más se vigila.
@@ -157,7 +157,7 @@ export function Masthead({
 }) {
   return (
     <header className="asphalt text-white">
-      <div className="mx-auto max-w-6xl px-4 pt-6 pb-6 md:px-10 md:pt-9">
+      <div className="mx-auto max-w-[1600px] px-4 pt-6 pb-6 md:px-10 md:pt-8">
         {crumbs && <nav aria-label="Ruta" className="mb-3 flex flex-wrap items-center gap-1 text-sm text-stone-400">{crumbs}</nav>}
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div className="min-w-0">
@@ -174,5 +174,50 @@ export function Masthead({
 }
 
 export function PageBody({ children, wide = false }: { children: ReactNode; wide?: boolean }) {
-  return <div className={`mx-auto px-4 py-6 md:px-10 md:py-8 ${wide ? "" : "max-w-6xl"}`}>{children}</div>;
+  return <div className={`mx-auto px-4 py-6 md:px-10 md:py-8 ${wide ? "" : "max-w-[1600px]"}`}>{children}</div>;
+}
+
+const checkTone = {
+  pasa: "text-emerald-700",
+  "no pasa": "text-[#A32424]",
+  pendiente: "text-stone-500",
+  "sin checklist": "text-stone-300",
+} as const;
+
+const checkWord = { pasa: "pasa", "no pasa": "no pasa", pendiente: "pendiente", "sin checklist": "sin checklist" } as const;
+
+/** Celda de QA: avance del checklist y personita de accesibilidad (WCAG). */
+export function QaCell({
+  done,
+  total,
+  failing,
+  qa,
+  wcag,
+}: {
+  done: number;
+  total: number;
+  failing: number;
+  qa: keyof typeof checkTone;
+  wcag: keyof typeof checkTone;
+}) {
+  const label = `QA ${qa === "pasa" ? "aprobado" : `${done} de ${total}`}${failing ? `, ${failing} no pasan` : ""}. Accesibilidad WCAG: ${checkWord[wcag]}.`;
+  return (
+    <span className="inline-flex items-center gap-2" title={label}>
+      <span className="sr-only">{label}</span>
+      <span aria-hidden className="inline-flex min-w-16 items-center gap-1 font-mono text-sm">
+        {qa === "pasa" ? (
+          <span className="inline-flex items-center gap-1 font-sans text-xs font-semibold text-emerald-700">
+            <CheckIcon className="size-3.5" /> Aprobado
+          </span>
+        ) : failing ? (
+          <span className="font-semibold text-[#A32424]">
+            {done}/{total}
+          </span>
+        ) : (
+          <span className="text-stone-700">{total ? `${done}/${total}` : "—"}</span>
+        )}
+      </span>
+      <AccessibilityIcon aria-hidden className={`size-4.5 ${checkTone[wcag]}`} strokeWidth={2.25} />
+    </span>
+  );
 }

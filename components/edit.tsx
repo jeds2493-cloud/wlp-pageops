@@ -79,9 +79,9 @@ export function ActionButton({
 export function ActorSwitch({ actor }: { actor: Actor }) {
   const [pending, start] = useTransition();
   return (
-    <div className="mt-3 md:mt-6" role="group" aria-label="Editando como">
-      <p className="mb-2 hidden text-xs font-medium text-stone-400 md:block">Editando como</p>
-      <div className="grid grid-cols-2 gap-1 rounded-lg bg-wlp-dark-2 p-1">
+    <div role="group" aria-label="Editando como" className="flex items-center gap-2">
+      <span className="hidden text-xs text-stone-400 lg:inline">Editando como</span>
+      <div className="grid grid-cols-2 gap-0.5 rounded-lg bg-wlp-dark-2 p-0.5">
         {(["Producción", "Admin"] as const).map((a) => (
           <button
             key={a}
@@ -89,7 +89,7 @@ export function ActorSwitch({ actor }: { actor: Actor }) {
             aria-pressed={actor === a}
             disabled={pending}
             onClick={() => start(() => setActor(a))}
-            className={`min-h-9 rounded-md px-2 text-sm font-semibold transition-colors ${
+            className={`min-h-8 rounded-md px-2.5 text-sm font-semibold transition-colors ${
               actor === a ? "bg-wlp-yellow text-stone-900" : "text-stone-400 hover:text-white"
             }`}
           >

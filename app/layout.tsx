@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import Link from "next/link";
 import { Barlow_Semi_Condensed, IBM_Plex_Mono, Inter } from "next/font/google";
 import { cookies } from "next/headers";
 import { Download, LogOut } from "lucide-react";
@@ -32,35 +33,42 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         {!authed ? (
           children
         ) : (
-        <div className="md:flex">
-          <aside className="border-b border-wlp-border-dark bg-wlp-dark px-4 py-4 text-stone-400 md:sticky md:top-0 md:h-screen md:w-60 md:shrink-0 md:border-r md:border-b-0 md:px-5 md:py-6">
-            <div className="mb-4 flex items-center gap-3 md:mb-8">
-              <Image src="/wlp-logo.png" alt="We Love Paving" width={52} height={30} priority />
-              <div className="leading-none">
-                <div className="font-display text-lg font-extrabold tracking-wide text-white uppercase">PageOps</div>
-                <div className="mt-1 text-xs text-stone-400">welovepaving.com</div>
+        <>
+          <header className="sticky top-0 z-30 border-b border-wlp-border-dark bg-wlp-dark text-stone-400">
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 px-4 py-2 md:px-10">
+              <Link href="/" className="flex items-center gap-2.5" aria-label="WLP PageOps, inicio">
+                <Image src="/wlp-logo.png" alt="" width={44} height={25} priority />
+                <span className="font-display text-lg font-extrabold tracking-wide text-white uppercase">PageOps</span>
+              </Link>
+              <div className="order-last w-full md:order-none md:w-auto md:flex-1">
+                <Nav />
+              </div>
+              <div className="ml-auto flex items-center gap-1">
+                <ActorSwitch actor={actor} />
+                <a
+                  href="/respaldo"
+                  title="Descargar respaldo"
+                  aria-label="Descargar respaldo"
+                  className="ml-2 grid size-9 place-items-center rounded-lg hover:bg-wlp-dark-2 hover:text-white"
+                >
+                  <Download aria-hidden className="size-4" />
+                </a>
+                <form action={logout}>
+                  <button
+                    type="submit"
+                    title="Salir"
+                    aria-label="Salir"
+                    className="grid size-9 place-items-center rounded-lg hover:bg-wlp-dark-2 hover:text-white"
+                  >
+                    <LogOut aria-hidden className="size-4" />
+                  </button>
+                </form>
               </div>
             </div>
-            <Nav />
-            <ActorSwitch actor={actor} />
-            <a
-              href="/respaldo"
-              className="mt-6 hidden min-h-9 items-center gap-2 rounded-lg px-3 text-sm text-stone-400 hover:bg-wlp-dark-2 hover:text-white md:flex"
-            >
-              <Download aria-hidden className="size-4" /> Descargar respaldo
-            </a>
-            <form action={logout} className="hidden md:block">
-              <button
-                type="submit"
-                className="mt-1 flex min-h-9 w-full items-center gap-2 rounded-lg px-3 text-sm text-stone-400 hover:bg-wlp-dark-2 hover:text-white"
-              >
-                <LogOut aria-hidden className="size-4" /> Salir
-              </button>
-            </form>
-          </aside>
-          <main className="min-w-0 flex-1">{children}</main>
+          </header>
+          <main className="min-w-0">{children}</main>
           <Shortcuts />
-        </div>
+        </>
         )}
       </body>
     </html>

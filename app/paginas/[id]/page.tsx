@@ -3,7 +3,7 @@ import { requirePage } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { cookies } from "next/headers";
-import { ArrowRight, Check, ChevronRight, CircleDot, RotateCcw, Settings2, Trash2, X } from "lucide-react";
+import { Accessibility, ArrowRight, Check, ChevronRight, CircleDot, RotateCcw, Settings2, Trash2, X } from "lucide-react";
 import {
   addFeedback,
   addTask,
@@ -34,6 +34,7 @@ import {
   SubmitButton,
 } from "@/components/edit";
 import { Tabs } from "@/components/tabs";
+import { WCAG_GROUP } from "@/lib/templates";
 import { Badge, Card, Empty, ExternalLink, Field, inputCls, Masthead, PageBody, stageDot } from "@/components/ui";
 import {
   daysSince,
@@ -267,7 +268,18 @@ function QaTab({ page, w }: { page: Page; w: WorkItem }) {
       </p>
       <div className="space-y-3">
         {groups.map((g) => (
-          <Card key={g} title={g}>
+          <Card
+            key={g}
+            title={
+              g === WCAG_GROUP ? (
+                <span className="inline-flex items-center gap-2">
+                  <Accessibility aria-hidden className="size-4" /> {g}
+                </span>
+              ) : (
+                g
+              )
+            }
+          >
             <div className="-my-2 divide-y divide-stone-100">
               {w.qa
                 .filter((q) => q.group === g)
@@ -438,7 +450,7 @@ export default async function PaginaDetalle({ params, searchParams }: PageProps<
         </div>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
         <div className="min-w-0 space-y-4">
           <nav aria-label="Trabajos de esta página" className="flex flex-wrap items-center gap-1">
             {page.works.map((x) => {
@@ -524,7 +536,7 @@ export default async function PaginaDetalle({ params, searchParams }: PageProps<
         </div>
 
         <aside
-          className="space-y-4 lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:self-start lg:overflow-y-auto lg:overscroll-contain"
+          className="space-y-4 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:self-start lg:overflow-y-auto lg:overscroll-contain"
           aria-label="Notas y actividad de la página"
         >
           <Card title="Notas">
