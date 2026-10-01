@@ -24,8 +24,8 @@ const ROUGH = 0.6;
 const TEAR_ANGLE = 30;
 const STRETCH = 30;
 const RESISTANCE = 0.45;
-const FIBRE = "#d7d5d1"; // stone-300
-const EDGE = "#e3e2df"; // stone-200
+const FIBRE = "#1d1c1a"; // fibras de asfalto sobre el concreto
+const EDGE = "rgb(255 255 255 / 0.07)";
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 const rad = (deg: number) => (deg * Math.PI) / 180;
@@ -492,7 +492,11 @@ export function TearTicket({ ticket, pageTitle, pages }: { ticket: Ticket; pageT
       className={`relative list-none transition-[opacity,transform] duration-300 ease-out ${grabbing ? "z-20" : ""} ${editing ? "col-span-full" : ""}`}
       style={gone ? { opacity: 0, transform: "scale(0.97)" } : undefined}
     >
-      <div ref={rootRef} className="relative select-none" style={{ WebkitTapHighlightColor: "transparent" }}>
+      <div
+        ref={rootRef}
+        className="relative select-none [filter:drop-shadow(0_14px_14px_rgb(20_18_14/0.25))_drop-shadow(0_2px_2px_rgb(20_18_14/0.15))]"
+        style={{ WebkitTapHighlightColor: "transparent" }}
+      >
         {/* Cuerpo: en el flujo normal, así crece con el detalle */}
         <div ref={bodyRef} className="relative will-change-transform">
           {geo && !editing && (
@@ -506,7 +510,7 @@ export function TearTicket({ ticket, pageTitle, pages }: { ticket: Ticket; pageT
           )}
           <article
             aria-label={`Ticket ${number}: ${ticket.title}`}
-            className={`flex min-h-36 flex-col bg-white p-5 select-text ${editing ? "ring-1 ring-stone-200" : ""}`}
+            className="flex min-h-36 flex-col bg-tile p-5 text-stone-900 select-text [color-scheme:dark]"
             style={{
               paddingRight: editing ? undefined : STUB + 20,
               clipPath: geo && !editing ? `path('${geo.body}')` : undefined,
@@ -584,7 +588,7 @@ export function TearTicket({ ticket, pageTitle, pages }: { ticket: Ticket; pageT
                 <div className="mb-2 flex items-center gap-2">
                   <span className="font-mono text-xs font-semibold text-stone-500">{number}</span>
                   {ticket.priority !== "Normal" && (
-                    <Badge tone={ticket.priority === "Urgente" || ticket.priority === "Alta" ? "warn" : "neutral"}>{ticket.priority}</Badge>
+                    <Badge tone={ticket.priority === "Urgente" ? "danger" : ticket.priority === "Alta" ? "warn" : "neutral"}>{ticket.priority}</Badge>
                   )}
                   <button
                     ref={editBtnRef}
@@ -654,14 +658,14 @@ export function TearTicket({ ticket, pageTitle, pages }: { ticket: Ticket; pageT
             style={{ clipPath: `path('${geo.stub}')` }}
           >
             <div
-              className="absolute inset-y-0 right-0 flex flex-col items-center justify-center gap-2 bg-wlp-dark text-wlp-yellow group-focus-visible:bg-stone-800"
+              className="absolute inset-y-0 right-0 flex flex-col items-center justify-center gap-2 bg-gradient-to-b from-[#ffd451] to-signal-yellow text-ink group-hover:brightness-105"
               style={{ width: STUB }}
             >
-              <span className="font-mono text-lg font-semibold">{number}</span>
-              <span className="flex items-center gap-1 text-xs font-semibold text-stone-300 group-hover:text-white group-focus-visible:text-white">
+              <span className="num text-3xl font-semibold">{number}</span>
+              <span className="flex items-center gap-1 text-xs font-semibold text-ink/75 group-hover:text-ink group-focus-visible:text-ink">
                 <Scissors aria-hidden className="size-3.5" /> Cortar
               </span>
-              <span aria-hidden className="absolute inset-x-4 bottom-3 hidden h-0.5 rounded-full bg-wlp-yellow group-focus-visible:block" />
+              <span aria-hidden className="absolute inset-x-4 bottom-3 hidden h-0.5 rounded-full bg-ink group-focus-visible:block" />
             </div>
           </div>
         )}

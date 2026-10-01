@@ -68,8 +68,9 @@ Netlify → Add new site → Import from GitHub → `wlp-pageops`. Netlify detec
 
 ## Diseño
 
-Usa el sistema de diseño del sitio de WLP (tokens de `css/styles.css` en
-`welovepaving-prototype`): Barlow Semi Condensed para títulos, Inter para texto,
-IBM Plex Mono para etiquetas, amarillo `#F2C230`, negro cálido `#14120E` y fondo
-crema `#F2F1EF`. Los tokens viven en `app/globals.css`; la escala `stone` de
-Tailwind está remapeada a los grises cálidos de WLP.
+"Asfalto sobre concreto": tiles negras con pestaña de carpeta sobre un fondo gris concreto,
+paneles del color de cada etapa con la pista punteada del flujo, números condensados y
+botones oscuros en relieve; el amarillo WLP `#F2C230` es la acción principal. El sistema
+completo (colores, tipografía y piezas) está en [`DESIGN.md`](DESIGN.md) y el contexto del
+producto en [`PRODUCT.md`](PRODUCT.md). Los tokens viven en `app/globals.css` (dentro de las
+tiles la escala `stone` está invertida: `stone-900` es el texto claro principal).

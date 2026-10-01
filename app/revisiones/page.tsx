@@ -22,17 +22,17 @@ export default async function Revisiones() {
     <>
       <Masthead title="Revisiones" meta="Lo que espera al Admin y lo que regresó con cambios." />
       <PageBody>
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card title={`Esperando al Admin · ${waiting.length}`}>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card title="Esperando al Admin" action={<span className="num text-2xl text-ink">{waiting.length}</span>}>
           {waiting.length ? (
-            <ul className="-my-1 divide-y divide-stone-100">
+            <ul className="-my-1 divide-y divide-stone-200">
               {waiting.map(({ p, review }) => {
                 const d = review ? daysSince(review.requestedAt, now) : 0;
                 const fb = review?.feedback.length ?? 0;
                 return (
                   <li key={p.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5 text-sm">
                     <div>
-                      <Link href={`/paginas/${p.id}`} className="font-medium hover:underline">
+                      <Link href={`/paginas/${p.id}`} className="font-semibold text-stone-900 hover:underline">
                         {p.title}
                       </Link>
                       <div className="text-xs text-stone-500">
@@ -49,15 +49,15 @@ export default async function Revisiones() {
             <Empty>Nada esperando al Admin.</Empty>
           )}
         </Card>
-        <Card title={`Cambios solicitados · ${changes.length}`}>
+        <Card title="Cambios solicitados" action={<span className="num text-2xl text-ink">{changes.length}</span>}>
           {changes.length ? (
-            <ul className="space-y-2 text-sm">
+            <ul className="-my-1 divide-y divide-stone-200 text-sm">
               {changes.map((p) => (
-                <li key={p.id} className="flex items-center justify-between gap-2">
-                  <Link href={`/paginas/${p.id}`} className="hover:underline">
+                <li key={p.id} className="flex items-center justify-between gap-2 py-2.5">
+                  <Link href={`/paginas/${p.id}`} className="font-semibold text-stone-900 hover:underline">
                     {p.title}
                   </Link>
-                  <Badge tone="warn">{pendingFeedback(mainWork(p))} pendientes</Badge>
+                  <Badge tone="danger">{pendingFeedback(mainWork(p))} pendientes</Badge>
                 </li>
               ))}
             </ul>

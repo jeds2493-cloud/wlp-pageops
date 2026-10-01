@@ -1,35 +1,60 @@
 @import "tailwindcss";
 
-/* Sistema de diseño de We Love Paving (tokens de css/styles.css del sitio). */
+/*
+ * PageOps: asfalto sobre concreto. Tiles negras con pestaña de carpeta sobre un fondo
+ * gris concreto; paneles de color de señal (pintura vial) con brillo; números condensados.
+ */
 @theme inline {
   --font-sans: var(--font-inter), system-ui, sans-serif;
   --font-display: var(--font-barlow), sans-serif;
+  --font-num: var(--font-barlow-condensed), var(--font-barlow), sans-serif;
   --font-mono: var(--font-plex-mono), ui-monospace, monospace;
 
-  /* La escala "stone" se reemplaza por los grises cálidos de WLP. */
-  --color-stone-50: #f2f1ef; /* bg-cream */
-  --color-stone-100: #eae9e6; /* gray-concrete */
-  --color-stone-200: #e3e2df; /* border-light */
-  --color-stone-300: #d7d5d1; /* gray-concrete-2 */
-  --color-stone-400: #a8a192; /* text-muted-dark */
-  --color-stone-500: #6b6558; /* text-muted-light */
-  --color-stone-600: #4a453c; /* text-body */
-  --color-stone-700: #3a352d;
-  --color-stone-800: #2a261f;
-  --color-stone-900: #1a1712; /* text-dark */
+  /* Fondo de la app (concreto) y tinta para lo que va directo sobre él. */
+  --color-ground: #d2cfc9;
+  --color-ground-2: #c3c0b9;
+  --color-ink: #14120e;
+  --color-ink-2: #45403a;
+
+  /* Asfalto: tiles, superficies elevadas y pozos (inputs). */
+  --color-tile: #131211;
+  --color-tile-2: #1d1c1a;
+  --color-well: #0a0908;
+
+  /*
+   * Dentro de las tiles todo es oscuro: la escala "stone" va de lo más hundido (50)
+   * al texto principal (900). Así stone-900 siempre es el texto de más contraste.
+   */
+  --color-stone-50: #0b0a09;
+  --color-stone-100: #1f1e1b;
+  --color-stone-200: #2b2926;
+  --color-stone-300: #3c3a35;
+  --color-stone-400: #77726a;
+  --color-stone-500: #a09b91;
+  --color-stone-600: #bdb8b0;
+  --color-stone-700: #d2cec7;
+  --color-stone-800: #e5e2dc;
+  --color-stone-900: #f5f3ef;
+
+  /* Colores de señal: uno por etapa, siempre con texto tinta encima. */
+  --color-signal-yellow: #f2c230;
+  --color-signal-green: #4be37a;
+  --color-signal-orange: #ff8a3d;
+  --color-signal-red: #ff5468;
+  --color-signal-violet: #b9a3ff;
+  --color-signal-concrete: #d9d6d0;
 
   --color-wlp-yellow: #f2c230;
-  --color-wlp-yellow-hover: #e0af1e;
-  --color-wlp-dark: #14120e;
-  --color-wlp-dark-2: #1b1813;
-  --color-wlp-border-dark: #322d24;
-  --color-wlp-red: #d93838;
+  --color-wlp-yellow-hover: #ffd34d;
+  --color-wlp-red: #ff5468;
 
   --radius-wlp: 14px;
+  --radius-tile: 26px;
 }
 
 html {
   color-scheme: light;
+  background: var(--color-ground);
 }
 
 body {
@@ -37,35 +62,39 @@ body {
 }
 
 ::selection {
-  background: var(--color-wlp-yellow);
-  color: var(--color-stone-900);
+  background: var(--color-signal-yellow);
+  color: var(--color-ink);
 }
 
-/* Foco visible y consistente en toda la app (teclado). */
+/* Foco visible: tinta sobre el concreto, amarillo dentro del asfalto. */
 :focus-visible {
-  outline: 2px solid var(--color-stone-900);
+  outline: 2px solid var(--color-ink);
   outline-offset: 2px;
-  border-radius: 6px;
+  border-radius: 8px;
 }
-input:focus-visible,
-select:focus-visible,
-textarea:focus-visible {
-  outline: 2px solid var(--color-wlp-yellow);
-  outline-offset: 1px;
+.tile :focus-visible,
+.tile-folder :focus-visible {
+  outline-color: var(--color-signal-yellow);
+}
+.panel :focus-visible {
+  outline-color: var(--color-ink);
 }
 
 * {
-  scrollbar-color: var(--color-stone-300) transparent;
+  scrollbar-color: var(--color-ground-2) transparent;
   scrollbar-width: thin;
+}
+.tile *,
+.tile-folder * {
+  scrollbar-color: var(--color-stone-300) transparent;
 }
 
 a {
   text-underline-offset: 3px;
 }
 
-/* Fechas nativas: el ícono del calendario con el color del texto. */
 input[type="date"]::-webkit-calendar-picker-indicator {
-  opacity: 0.6;
+  opacity: 0.7;
   cursor: pointer;
 }
 
@@ -78,15 +107,232 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   }
 }
 
+/* ── Tiles ─────────────────────────────────────────────────────────────────── */
+
+/* Tile simple: un bloque de asfalto con sombra suave hacia abajo. */
+.tile {
+  color-scheme: dark;
+  background: var(--color-tile);
+  color: var(--color-stone-900);
+  border-radius: var(--radius-tile);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.06),
+    0 22px 40px -22px rgb(20 18 14 / 0.55),
+    0 2px 4px rgb(20 18 14 / 0.18);
+}
+
+/*
+ * Tile con pestaña de carpeta: la pestaña (título) sube a la izquierda, el resto del
+ * borde superior baja y deja un hueco para las acciones. La sombra sigue la silueta.
+ */
+.tile-folder {
+  display: flex;
+  flex-direction: column;
+  color-scheme: dark;
+  color: var(--color-stone-900);
+  filter: drop-shadow(0 16px 16px rgb(20 18 14 / 0.24)) drop-shadow(0 2px 2px rgb(20 18 14 / 0.16));
+}
+.tile-tab {
+  position: relative;
+  min-width: 0;
+  max-width: calc(100% - 2 * var(--radius-tile));
+  background: var(--color-tile);
+  border-radius: var(--radius-tile) var(--radius-tile) 0 0;
+  margin-bottom: -1px;
+  padding: 1.1rem 1.5rem 0.35rem;
+}
+/* Curva cóncava que une la pestaña con el cuerpo. */
+.tile-tab::after {
+  content: "";
+  position: absolute;
+  left: calc(100% - 0.5px);
+  bottom: 0;
+  width: var(--radius-tile);
+  height: var(--radius-tile);
+  background: radial-gradient(circle at 100% 0, transparent calc(var(--radius-tile) - 0.5px), var(--color-tile) var(--radius-tile));
+}
+.tile-body {
+  flex: 1;
+  background: var(--color-tile);
+  border-radius: 0 var(--radius-tile) var(--radius-tile) var(--radius-tile);
+}
+
+/* ── Paneles de señal ──────────────────────────────────────────────────────── */
+
+/* Panel de pintura vial dentro de una tile; --signal define su color. */
+.panel {
+  --signal: var(--color-signal-yellow);
+  position: relative;
+  background: var(--signal);
+  color: var(--color-ink);
+  border-radius: 20px;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.4),
+    0 16px 34px -16px color-mix(in srgb, var(--signal) 85%, transparent);
+}
+/* Pestaña del panel a la derecha (p. ej. "8 días"), con su curva cóncava. */
+.panel-tab {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% - 1px);
+  background: var(--signal);
+  border-radius: 14px 14px 0 0;
+  padding: 0.3rem 1rem 0;
+  font-family: var(--font-num);
+  font-weight: 600;
+  font-size: 1.05rem;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+.panel-tab::before {
+  content: "";
+  position: absolute;
+  right: calc(100% - 0.5px);
+  bottom: 0;
+  width: 14px;
+  height: 14px;
+  background: radial-gradient(circle at 0 0, transparent 13.5px, var(--signal) 14px);
+}
+
+/* Pista punteada (como las marcas de los paneles de referencia). */
+.track {
+  height: 6px;
+  background: radial-gradient(circle, currentColor 1.1px, transparent 1.6px) 0 50% / 7px 6px repeat-x;
+  opacity: 0.5;
+}
+
+/* Franja de color que asoma bajo una tile: va detrás y crece con su texto. */
+.underlay {
+  position: relative;
+  isolation: isolate;
+}
+.underlay-strip {
+  position: relative;
+  z-index: -1;
+  margin-top: calc(-1 * var(--radius-tile));
+  padding: calc(var(--radius-tile) + 0.65rem) 1.25rem 0.75rem;
+  border-radius: 0 0 var(--radius-tile) var(--radius-tile);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem 0.5rem;
+  text-align: center;
+  color: var(--color-ink);
+  font-size: 0.875rem;
+  font-weight: 600;
+  box-shadow: 0 14px 26px -18px rgb(20 18 14 / 0.5);
+}
+
+/* ── Botones ───────────────────────────────────────────────────────────────── */
+
+@utility btn-signal {
+  display: inline-flex;
+  min-height: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  border-radius: 0.875rem;
+  padding: 0 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--color-ink);
+  background: linear-gradient(to bottom, #ffd451, var(--color-signal-yellow));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.5),
+    0 10px 22px -12px rgb(242 194 48 / 0.9);
+  transition:
+    filter 150ms ease-out,
+    transform 150ms ease-out;
+  &:hover {
+    filter: brightness(1.06);
+  }
+  &:active {
+    transform: translateY(1px);
+  }
+  &:disabled {
+    opacity: 0.5;
+  }
+}
+
+/* Botón suave en relieve (como los de las tarjetas de referencia). */
+@utility btn-soft {
+  display: inline-flex;
+  min-height: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  border-radius: 0.875rem;
+  padding: 0 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--color-stone-900);
+  background: linear-gradient(to bottom, #3b3a36, #2a2926);
+  border: 1px solid rgb(255 255 255 / 0.07);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.09),
+    0 8px 16px -8px rgb(0 0 0 / 0.65);
+  transition:
+    filter 150ms ease-out,
+    transform 150ms ease-out;
+  &:hover {
+    filter: brightness(1.18);
+  }
+  &:active {
+    transform: translateY(1px);
+  }
+  &:disabled {
+    opacity: 0.5;
+  }
+}
+
+/* Botón redondo de ícono. */
+@utility btn-round {
+  display: inline-grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex-shrink: 0;
+  border-radius: 9999px;
+  color: var(--color-stone-800);
+  background: radial-gradient(circle at 50% 20%, #4a4844, #252422 72%);
+  border: 1px solid rgb(255 255 255 / 0.08);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.1),
+    0 8px 14px -8px rgb(0 0 0 / 0.7);
+  transition: filter 150ms ease-out;
+  &:hover {
+    filter: brightness(1.2);
+    color: var(--color-stone-900);
+  }
+}
+
+/* Contenedor segmentado hundido (navegación, pestañas, selectores). */
+@utility seg {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  border-radius: 9999px;
+  background: var(--color-well);
+  box-shadow:
+    inset 0 1px 2px rgb(0 0 0 / 0.6),
+    0 1px 0 rgb(255 255 255 / 0.05);
+}
+
+/* Número grande condensado. */
+@utility num {
+  font-family: var(--font-num);
+  font-weight: 500;
+  line-height: 0.9;
+  font-variant-numeric: tabular-nums;
+}
+
 /* Línea de carril: el trazo amarillo punteado de las marcas viales de WLP. */
 .lane-line {
   height: 3px;
-  background: repeating-linear-gradient(90deg, var(--color-wlp-yellow) 0 28px, transparent 28px 44px);
-}
-
-/* Franja de encabezado: el negro asfalto de WLP. */
-.asphalt {
-  background-color: var(--color-wlp-dark);
+  background: repeating-linear-gradient(90deg, var(--color-signal-yellow) 0 28px, transparent 28px 44px);
 }
 
 kbd {
@@ -95,10 +341,10 @@ kbd {
   min-width: 1.35rem;
   height: 1.35rem;
   padding: 0 0.3rem;
-  border-radius: 5px;
+  border-radius: 6px;
   border: 1px solid currentColor;
   font-family: var(--font-mono);
   font-size: 0.7rem;
   line-height: 1;
-  opacity: 0.75;
+  opacity: 0.7;
 }

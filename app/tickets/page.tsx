@@ -29,8 +29,8 @@ export default async function Tickets() {
         title="Tickets"
         meta={
           <>
-            <span className="font-mono text-white">{open.length}</span> abiertos ·{" "}
-            <span className="font-mono text-white">{closed.length}</span> en el historial. Jala el talón de un ticket para cerrarlo.
+            <span className="font-semibold text-ink">{open.length}</span> abiertos ·{" "}
+            <span className="font-semibold text-ink">{closed.length}</span> en el historial. Jala el talón amarillo de un ticket para cerrarlo.
           </>
         }
       />
@@ -38,19 +38,19 @@ export default async function Tickets() {
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
           <section aria-label="Tickets abiertos">
             {open.length ? (
-              <ul className="grid gap-5 sm:grid-cols-2 2xl:grid-cols-3">
+              <ul className="grid gap-6 sm:grid-cols-2 2xl:grid-cols-3">
                 {open.map((t) => (
                   <TearTicket key={t.id} ticket={t} pages={pageOptions} pageTitle={t.pageId ? titles.get(t.pageId) : undefined} />
                 ))}
               </ul>
             ) : (
-              <div className="rounded-wlp border border-dashed border-stone-300 px-5 py-12 text-center">
-                <p className="text-sm text-stone-600">No hay tickets abiertos.</p>
+              <div className="rounded-[26px] border-2 border-dashed border-ink/20 px-5 py-14 text-center">
+                <p className="text-sm font-medium text-ink-2">No hay tickets abiertos.</p>
               </div>
             )}
           </section>
 
-          <aside className="space-y-4">
+          <aside className="space-y-6">
             <Card title="Nuevo ticket">
               <form action={createTicket} className="space-y-3">
                 <Field label="Título">
@@ -82,15 +82,15 @@ export default async function Tickets() {
               </form>
             </Card>
 
-            <Card title={`Historial · ${closed.length}`} flush>
+            <Card title="Historial" action={<span className="num text-2xl text-ink">{closed.length}</span>} flush>
               {closed.length ? (
-                <ul className="max-h-[32rem] divide-y divide-stone-100 overflow-y-auto">
+                <ul className="max-h-[32rem] divide-y divide-stone-200 overflow-y-auto">
                   {closed.map((t) => (
-                    <li key={t.id} className="flex items-start gap-2 px-5 py-3">
+                    <li key={t.id} className="flex items-start gap-2 px-6 py-3">
                       <div className="min-w-0 flex-1">
                         <p className="text-sm text-stone-800">
                           <span className="font-mono text-xs text-stone-500">#{String(t.number).padStart(3, "0")}</span>{" "}
-                          <span className="line-through decoration-stone-400">{t.title}</span>
+                          <span className="line-through decoration-stone-500">{t.title}</span>
                         </p>
                         <p className="mt-0.5 text-xs text-stone-500">
                           Cerrado por {t.closedBy} · {formatDateTime(t.closedAt!)}
@@ -111,7 +111,7 @@ export default async function Tickets() {
                         action={deleteTicket.bind(null, t.id)}
                         confirmText={`¿Eliminar el ticket #${t.number} del historial?`}
                         label={`Eliminar ticket #${t.number}`}
-                        className={`${buttonCls.quiet} hover:text-wlp-red`}
+                        className={`${buttonCls.quiet} hover:text-signal-red`}
                       >
                         <Trash2 aria-hidden className="size-4" />
                       </ActionButton>

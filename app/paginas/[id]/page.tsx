@@ -3,7 +3,7 @@ import { requirePage } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { cookies } from "next/headers";
-import { Accessibility, Check, ChevronRight, RotateCcw, Settings2, Trash2 } from "lucide-react";
+import { Accessibility, Check, ChevronDown, ChevronRight, Lock, RotateCcw, Settings2, Trash2 } from "lucide-react";
 import {
   addNote,
   addTask,
@@ -31,10 +31,11 @@ import {
 } from "@/components/edit";
 import { Tabs } from "@/components/tabs";
 import { WCAG_GROUP } from "@/lib/templates";
-import { Badge, Card, Empty, ExternalLink, Field, inputCls, Masthead, PageBody, stageDot } from "@/components/ui";
+import { Badge, Card, Empty, ExternalLink, Field, inputCls, Masthead, PageBody, Panel, stageDot, stageSignal, Underlay } from "@/components/ui";
 import {
   daysSince,
   editUrl,
+  formatDate,
   formatDateTime,
   getPage,
   mainWork,
@@ -63,20 +64,20 @@ function TasksTab({ page, w }: { page: Page; w: WorkItem }) {
   return (
     <div className="space-y-3">
       {w.tasks.length ? (
-        <ul className="divide-y divide-stone-100 rounded-wlp border border-stone-200 bg-white">
+        <ul className="divide-y divide-stone-200">
           {w.tasks.map((t) => (
-            <li key={t.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2">
+            <li key={t.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
               <ActionButton
                 action={toggleTask.bind(null, page.id, w.id, t.id)}
                 label={t.done ? `Reabrir: ${t.title}` : `Completar: ${t.title}`}
-                className={`grid size-6 shrink-0 place-items-center rounded border transition-colors ${
-                  t.done ? "border-emerald-700 bg-emerald-700 text-white" : "border-stone-400 bg-white hover:border-stone-900"
+                className={`grid size-6 shrink-0 place-items-center rounded-lg border-2 transition-colors ${
+                  t.done ? "border-signal-green bg-signal-green text-ink" : "border-stone-400 hover:border-stone-900"
                 }`}
               >
                 {t.done && <Check aria-hidden className="size-4" />}
               </ActionButton>
               <span className={`min-w-40 flex-1 text-sm ${t.done ? "text-stone-500 line-through" : "text-stone-900"}`}>{t.title}</span>
-              {t.critical && <Badge tone="warn">Crítica</Badge>}
+              {t.critical && <Badge tone="danger">Crítica</Badge>}
               {t.feedbackId && <Badge tone="info">Feedback</Badge>}
               {t.qaId && <Badge tone="info">QA</Badge>}
               <Badge>{t.category}</Badge>
@@ -84,7 +85,7 @@ function TasksTab({ page, w }: { page: Page; w: WorkItem }) {
                 action={deleteTask.bind(null, page.id, w.id, t.id)}
                 confirmText={`¿Eliminar la tarea "${t.title}"?`}
                 label={`Eliminar tarea: ${t.title}`}
-                className={`${buttonCls.quiet} hover:text-wlp-red`}
+                className={`${buttonCls.quiet} hover:text-signal-red`}
               >
                 <Trash2 aria-hidden className="size-4" />
               </ActionButton>
@@ -94,7 +95,7 @@ function TasksTab({ page, w }: { page: Page; w: WorkItem }) {
       ) : (
         <Empty>Sin tareas. Agrega una abajo o convierte un punto de feedback en tarea.</Empty>
       )}
-      <form action={addTask.bind(null, page.id, w.id)} className="flex flex-wrap items-end gap-2 rounded-wlp border border-dashed border-stone-300 p-3">
+      <form action={addTask.bind(null, page.id, w.id)} className="flex flex-wrap items-end gap-2 rounded-[20px] border border-dashed border-stone-300 p-3">
         <Field label="Nueva tarea" className="min-w-48 flex-1">
           <input name="title" required className={inputCls} placeholder="Ej. Optimizar imagen del hero" />
         </Field>
@@ -106,7 +107,7 @@ function TasksTab({ page, w }: { page: Page; w: WorkItem }) {
           </select>
         </Field>
         <label className="flex min-h-10 items-center gap-2 text-sm text-stone-700">
-          <input type="checkbox" name="critical" className="size-4 accent-[#d93838]" /> Crítica
+          <input type="checkbox" name="critical" className="size-4 accent-[#ff5468]" /> Crítica
         </label>
         <SubmitButton variant="ghost">Agregar</SubmitButton>
       </form>
@@ -118,7 +119,7 @@ function QaTab({ page, w }: { page: Page; w: WorkItem }) {
   const { done, total, failing, pending } = qaProgress(w);
   if (!total) {
     return (
-      <div className="rounded-wlp border border-dashed border-stone-300 px-5 py-6 text-center">
+      <div className="rounded-[20px] border border-dashed border-stone-300 px-5 py-6 text-center">
         <p className="mb-3 text-sm text-stone-600">Este trabajo no tiene checklist de QA.</p>
         <ActionButton action={resetQa.bind(null, page.id, w.id)} className={buttonCls.ghost}>
           Usar el checklist de {page.type}
@@ -140,14 +141,14 @@ function QaTab({ page, w }: { page: Page; w: WorkItem }) {
             aria-valuemax={total}
             className="flex h-2 w-40 overflow-hidden rounded-full bg-stone-200"
           >
-            <div className="h-full bg-emerald-600" style={{ width: `${(done / total) * 100}%` }} />
-            <div className="h-full bg-wlp-red" style={{ width: `${(failing / total) * 100}%` }} />
+            <div className="h-full bg-signal-green" style={{ width: `${(done / total) * 100}%` }} />
+            <div className="h-full bg-signal-red" style={{ width: `${(failing / total) * 100}%` }} />
           </div>
           <span className="text-sm text-stone-700">
             <span className="font-mono font-semibold">{done}</span>/{total} listos
             {failing > 0 && (
               <>
-                {" "}· <span className="font-mono font-semibold text-[#A32424]">{failing}</span> no pasan
+                {" "}· <span className="font-mono font-semibold text-signal-red">{failing}</span> no pasan
               </>
             )}
             {pending > 0 && (
@@ -167,21 +168,13 @@ function QaTab({ page, w }: { page: Page; w: WorkItem }) {
       <p className="mb-3 text-sm text-stone-600">
         Para aprobar, cada punto pasa o no aplica (con motivo). «No pasa» abre una tarea crítica; al cerrarla, el punto vuelve a revisarse.
       </p>
-      <div className="space-y-3">
+      <div className="space-y-5">
         {groups.map((g) => (
-          <Card
-            key={g}
-            title={
-              g === WCAG_GROUP ? (
-                <span className="inline-flex items-center gap-2">
-                  <Accessibility aria-hidden className="size-4" /> {g}
-                </span>
-              ) : (
-                g
-              )
-            }
-          >
-            <div className="-my-2 divide-y divide-stone-100">
+          <section key={g} aria-label={g}>
+            <h3 className="mb-1 flex items-center gap-2 border-b border-stone-200 pb-2 font-display text-lg font-bold text-stone-900">
+              {g === WCAG_GROUP && <Accessibility aria-hidden className="size-4.5" />} {g}
+            </h3>
+            <div className="divide-y divide-stone-200/70">
               {w.qa
                 .filter((q) => q.group === g)
                 .map((q) => (
@@ -197,7 +190,7 @@ function QaTab({ page, w }: { page: Page; w: WorkItem }) {
                   />
                 ))}
             </div>
-          </Card>
+          </section>
         ))}
       </div>
     </div>
@@ -206,62 +199,104 @@ function QaTab({ page, w }: { page: Page; w: WorkItem }) {
 
 function WorkStatus({ page, w, now }: { page: Page; w: WorkItem; now: Date }) {
   const since = stageSince(w);
+  const days = since ? daysSince(since, now) : undefined;
   const warnings = Object.fromEntries(STAGES.map((s) => [s, stageWarnings(page, w, s)]));
   const open = openReview(w);
   const nextReview = open && !open.result ? open.number : (w.reviews.at(-1)?.number ?? 0) + 1;
+  const cta = (
+    <StageCTA
+      pageId={page.id}
+      workId={w.id}
+      stage={w.stage}
+      nextReview={nextReview}
+      openReviewId={open?.id}
+      pending={pendingFeedback(w)}
+      warnings={warnings}
+    />
+  );
   return (
-    <section aria-label="Estado del trabajo" className="rounded-wlp border border-stone-200 bg-white">
-      <div className="flex flex-wrap items-center justify-between gap-4 px-5 pt-5">
-        <StageStepper pageId={page.id} workId={w.id} stage={w.stage} warnings={warnings} />
-        <StageCTA
-          pageId={page.id}
-          workId={w.id}
-          stage={w.stage}
-          nextReview={nextReview}
-          openReviewId={open?.id}
-          pending={pendingFeedback(w)}
-          warnings={warnings}
-        />
-      </div>
-      <div className="grid grid-cols-2 gap-x-4 gap-y-3 px-5 py-4 sm:grid-cols-3 lg:grid-cols-6">
-        {w.kind === "Ajuste" && (
-          <div className="col-span-2 sm:col-span-3 lg:col-span-6">
-            <InlineField pageId={page.id} workId={w.id} field="title" label="Ajuste" value={w.title} kind="text" />
+    <Underlay
+      signal="var(--color-signal-red)"
+      strip={
+        w.blocked && (
+          <>
+            <Lock aria-hidden className="size-4" /> Bloqueada: {w.blocked.reason} · desde {formatDate(w.blocked.since)}
+          </>
+        )
+      }
+    >
+      <section aria-label="Estado del trabajo" className="tile-folder">
+        <div className="flex flex-wrap items-end">
+          <div className="tile-tab px-3 pt-3">
+            <nav aria-label="Trabajos de esta página" className="seg w-fit max-w-full flex-wrap rounded-[18px]">
+              {page.works.map((x) => {
+                const selected = x.id === w.id;
+                return (
+                  <Link
+                    key={x.id}
+                    href={`/paginas/${page.id}?w=${x.id}`}
+                    scroll={false}
+                    aria-current={selected ? "page" : undefined}
+                    className={`inline-flex min-h-9 max-w-64 items-center gap-2 rounded-full px-3.5 text-sm font-semibold transition-colors ${
+                      selected ? "bg-stone-800 text-ink" : "text-stone-500 hover:bg-white/[.06] hover:text-stone-900"
+                    }`}
+                  >
+                    <span aria-hidden className={`size-2 shrink-0 rounded-full ${stageDot[x.stage]}`} />
+                    <span className="truncate">{x.kind === "Ajuste" ? `Ajuste: ${x.title}` : "Página V2"}</span>
+                    <span className="sr-only">({x.stage})</span>
+                  </Link>
+                );
+              })}
+              <AddAdjustment pageId={page.id} />
+            </nav>
           </div>
-        )}
-        <InlineField pageId={page.id} workId={w.id} field="priority" label="Prioridad" value={w.priority} options={PRIORITIES} />
-        <InlineField pageId={page.id} workId={w.id} field="storyPoints" label="Story points" value={w.storyPoints} options={STORY_POINTS} />
-        <InlineField pageId={page.id} workId={w.id} field="startDate" label="Inicio" value={w.startDate} kind="date" />
-        <InlineField pageId={page.id} workId={w.id} field="dueDate" label="Entrega" value={w.dueDate} kind="date" />
-        <InlineField pageId={page.id} workId={w.id} field="deliveredAt" label="Entregada el" value={w.deliveredAt} kind="date" />
-        <div>
-          <span className="block text-xs font-medium text-stone-500">En esta etapa</span>
-          <span className="flex min-h-9 items-center text-sm font-semibold text-stone-900">
-            {since ? `${daysSince(since, now)} días` : "—"}
-          </span>
+          <div className="hidden min-w-0 flex-1 justify-end py-2 pl-8 sm:flex">{cta}</div>
         </div>
-      </div>
-      <div className="flex flex-wrap items-center gap-2 border-t border-stone-100 px-5 py-2">
-        <BlockToggle pageId={page.id} workId={w.id} blocked={w.blocked} />
-        {w.stage !== "Archivado" && (
-          <ActionButton
-            action={setStage.bind(null, page.id, w.id, "Archivado")}
-            confirmText="¿Archivar este trabajo? Puedes reabrirlo después."
+        <div className="tile-body p-4 md:p-6">
+          <div className="mb-2 sm:hidden">{cta}</div>
+          <Panel
+            signal={stageSignal[w.stage]}
+            tab={days === undefined ? w.stage : days === 0 ? "Hoy en esta etapa" : `${days} ${days === 1 ? "día" : "días"} en esta etapa`}
           >
-            Archivar
-          </ActionButton>
-        )}
-        {w.kind === "Ajuste" && (
-          <ActionButton
-            action={deleteWork.bind(null, page.id, w.id)}
-            confirmText={`¿Eliminar el ajuste "${w.title}" con sus tareas?`}
-            className={`${buttonCls.quiet} hover:text-wlp-red`}
-          >
-            <Trash2 aria-hidden className="size-4" /> Eliminar ajuste
-          </ActionButton>
-        )}
-      </div>
-    </section>
+            <div className="overflow-x-auto px-2 py-2.5">
+              <StageStepper pageId={page.id} workId={w.id} stage={w.stage} warnings={warnings} />
+            </div>
+          </Panel>
+          <div className="mt-5 grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3 lg:grid-cols-5">
+            {w.kind === "Ajuste" && (
+              <div className="col-span-2 sm:col-span-3 lg:col-span-5">
+                <InlineField pageId={page.id} workId={w.id} field="title" label="Ajuste" value={w.title} kind="text" />
+              </div>
+            )}
+            <InlineField pageId={page.id} workId={w.id} field="priority" label="Prioridad" value={w.priority} options={PRIORITIES} />
+            <InlineField pageId={page.id} workId={w.id} field="storyPoints" label="Story points" value={w.storyPoints} options={STORY_POINTS} />
+            <InlineField pageId={page.id} workId={w.id} field="startDate" label="Inicio" value={w.startDate} kind="date" />
+            <InlineField pageId={page.id} workId={w.id} field="dueDate" label="Entrega" value={w.dueDate} kind="date" />
+            <InlineField pageId={page.id} workId={w.id} field="deliveredAt" label="Entregada el" value={w.deliveredAt} kind="date" />
+          </div>
+          <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-stone-200 pt-3">
+            <BlockToggle pageId={page.id} workId={w.id} blocked={w.blocked} />
+            {w.stage !== "Archivado" && (
+              <ActionButton
+                action={setStage.bind(null, page.id, w.id, "Archivado")}
+                confirmText="¿Archivar este trabajo? Puedes reabrirlo después."
+              >
+                Archivar
+              </ActionButton>
+            )}
+            {w.kind === "Ajuste" && (
+              <ActionButton
+                action={deleteWork.bind(null, page.id, w.id)}
+                confirmText={`¿Eliminar el ajuste "${w.title}" con sus tareas?`}
+                className={`${buttonCls.quiet} hover:text-signal-red`}
+              >
+                <Trash2 aria-hidden className="size-4" /> Eliminar ajuste
+              </ActionButton>
+            )}
+          </div>
+        </div>
+      </section>
+    </Underlay>
   );
 }
 
@@ -287,11 +322,11 @@ export default async function PaginaDetalle({ params, searchParams }: PageProps<
       <Masthead
         crumbs={
           <>
-            <Link href="/" className="hover:text-white hover:underline">
+            <Link href="/" className="hover:text-ink hover:underline">
               Páginas
             </Link>
             <ChevronRight aria-hidden className="size-4" />
-            <Link href={`/?tipo=${encodeURIComponent(page.type)}`} className="hover:text-white hover:underline">
+            <Link href={`/?tipo=${encodeURIComponent(page.type)}`} className="hover:text-ink hover:underline">
               {page.type}
             </Link>
           </>
@@ -310,7 +345,7 @@ export default async function PaginaDetalle({ params, searchParams }: PageProps<
                 <ExternalLink href={preview} primary>
                   Preview
                 </ExternalLink>
-                <ExternalLink href={edit} onDark>
+                <ExternalLink href={edit}>
                   Editar en WP
                 </ExternalLink>
               </>
@@ -318,14 +353,14 @@ export default async function PaginaDetalle({ params, searchParams }: PageProps<
               <AddLinkButton field="wp">ID de WordPress</AddLinkButton>
             )}
             {page.publicUrl ? (
-              <ExternalLink href={page.publicUrl} onDark>
+              <ExternalLink href={page.publicUrl}>
                 Pública
               </ExternalLink>
             ) : (
               <AddLinkButton field="publicUrl">URL pública</AddLinkButton>
             )}
             {page.docsUrl ? (
-              <ExternalLink href={page.docsUrl} onDark>
+              <ExternalLink href={page.docsUrl}>
                 Documentación
               </ExternalLink>
             ) : (
@@ -337,42 +372,20 @@ export default async function PaginaDetalle({ params, searchParams }: PageProps<
 
       <PageBody>
       {page.importWarnings.length > 0 && (
-        <div role="note" className="mb-5 flex flex-wrap items-start justify-between gap-3 rounded-wlp border border-wlp-yellow/70 bg-[#FDF3CF] px-5 py-3 text-sm text-[#6B4E00]">
+        <div role="note" className="mb-5 flex flex-wrap items-start justify-between gap-3 rounded-[20px] bg-signal-yellow px-5 py-3 text-sm font-medium text-ink shadow-[0_14px_30px_-18px_rgb(242_194_48)]">
           <ul className="space-y-0.5">
             {page.importWarnings.map((x) => (
               <li key={x}>{x}</li>
             ))}
           </ul>
-          <ActionButton action={dismissWarnings.bind(null, page.id)} className={`${buttonCls.quiet} text-[#6B4E00] hover:bg-[#F9E7A6]`}>
+          <ActionButton action={dismissWarnings.bind(null, page.id)} className="inline-flex min-h-9 items-center rounded-lg px-2.5 text-sm font-semibold text-ink hover:bg-black/[.08]">
             Ocultar aviso
           </ActionButton>
         </div>
       )}
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="min-w-0 space-y-4">
-          <nav aria-label="Trabajos de esta página" className="flex flex-wrap items-center gap-1">
-            {page.works.map((x) => {
-              const selected = x.id === w.id;
-              return (
-                <Link
-                  key={x.id}
-                  href={`/paginas/${page.id}?w=${x.id}`}
-                  scroll={false}
-                  aria-current={selected ? "page" : undefined}
-                  className={`inline-flex min-h-9 max-w-72 items-center gap-2 rounded-lg px-3 text-sm transition-colors ${
-                    selected ? "bg-wlp-dark font-semibold text-white" : "text-stone-700 hover:bg-stone-200/70"
-                  }`}
-                >
-                  <span aria-hidden className={`size-2 shrink-0 rounded-full ${stageDot[x.stage]}`} />
-                  <span className="truncate">{x.kind === "Ajuste" ? `Ajuste: ${x.title}` : "Página V2"}</span>
-                  <span className="sr-only">({x.stage})</span>
-                </Link>
-              );
-            })}
-            <AddAdjustment pageId={page.id} />
-          </nav>
-
+        <div className="min-w-0 space-y-6">
           <WorkStatus key={w.id} page={page} w={w} now={now} />
 
           <Tabs
@@ -390,12 +403,13 @@ export default async function PaginaDetalle({ params, searchParams }: PageProps<
               { id: "notas", label: "Notas", count: page.notes.length || undefined, content: <NotesTab page={page} actor={actor} /> },
             ]}
           />
-          <details id="config" className="group rounded-wlp border border-stone-200 bg-white">
-            <summary className="flex min-h-12 cursor-pointer items-center gap-2 px-5 text-sm font-semibold text-stone-800">
-              <Settings2 aria-hidden className="size-4" /> Configuración de la página
+          <details id="config" className="group tile">
+            <summary className="flex min-h-14 cursor-pointer list-none flex-wrap items-center gap-x-2 gap-y-0.5 px-6 py-3 text-sm font-semibold text-stone-900 [&::-webkit-details-marker]:hidden">
+              <Settings2 aria-hidden className="size-4 text-stone-500" /> Configuración de la página
               <span className="font-normal text-stone-500">título, tipo, ID de WordPress, URL y documentación</span>
+              <ChevronDown aria-hidden className="ml-auto size-4 text-stone-500 transition-transform group-open:rotate-180" />
             </summary>
-            <div className="border-t border-stone-100 p-5">
+            <div className="border-t border-stone-200 p-6">
               <PageConfigForm pageId={page.id}>
                 <Field label="Título" className="sm:col-span-2">
                   <input name="title" defaultValue={page.title} required className={inputCls} />
@@ -420,12 +434,12 @@ export default async function PaginaDetalle({ params, searchParams }: PageProps<
                   <input id="cfg-docsUrl" name="docsUrl" type="url" defaultValue={page.docsUrl} className={inputCls} placeholder="Carpeta del reporte" />
                 </Field>
               </PageConfigForm>
-              <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50/60 px-4 py-3">
+              <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-signal-red/10 px-4 py-3 ring-1 ring-inset ring-signal-red/25">
                 <p className="text-sm text-stone-700">Eliminar la página borra sus trabajos, revisiones, notas y actividad.</p>
                 <ActionButton
                   action={deletePage.bind(null, page.id)}
                   confirmText={`¿Eliminar "${page.title}" con todo su historial? No se puede deshacer.`}
-                  className="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-red-300 bg-white px-4 text-sm font-semibold text-[#A32424] hover:bg-red-50"
+                  className="btn-soft text-signal-red"
                 >
                   <Trash2 aria-hidden className="size-4" /> Eliminar página
                 </ActionButton>
@@ -435,10 +449,10 @@ export default async function PaginaDetalle({ params, searchParams }: PageProps<
         </div>
 
         <aside
-          className="space-y-4 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:self-start lg:overflow-y-auto lg:overscroll-contain"
+          className="lg:sticky lg:top-24 lg:self-start"
           aria-label="Actividad de la página"
         >
-          <Card title="Actividad">
+          <Card title="Actividad" action={<span className="num text-lg text-ink-2">{page.activity.length}</span>} bodyClassName="lg:max-h-[calc(100vh-12rem)] lg:overflow-y-auto lg:overscroll-contain">
             <ol className="space-y-3">
               {page.activity.slice(0, ACTIVITY_PREVIEW).map((a) => (
                 <li key={a.id} className="text-sm text-stone-800">
@@ -481,9 +495,9 @@ function NotesTab({ page, actor }: { page: Page; actor: Actor }) {
   return (
     <div className="space-y-3">
       {page.notes.length ? (
-        <ul className="divide-y divide-stone-100 rounded-wlp border border-stone-200 bg-white">
+        <ul className="divide-y divide-stone-200">
           {page.notes.map((n) => (
-            <li key={n.id} className="flex items-start gap-3 px-4 py-3">
+            <li key={n.id} className="flex items-start gap-3 py-3">
               <div className="min-w-0 flex-1">
                 <p className="text-xs text-stone-500">
                   <span className="font-semibold text-stone-800">{n.kind}</span> · {n.author} · {formatDateTime(n.createdAt)}
@@ -494,7 +508,7 @@ function NotesTab({ page, actor }: { page: Page; actor: Actor }) {
                 action={deleteNote.bind(null, page.id, n.id)}
                 confirmText="¿Eliminar esta nota?"
                 label="Eliminar nota"
-                className={`${buttonCls.quiet} hover:text-wlp-red`}
+                className={`${buttonCls.quiet} hover:text-signal-red`}
               >
                 <Trash2 aria-hidden className="size-4" />
               </ActionButton>
@@ -504,7 +518,7 @@ function NotesTab({ page, actor }: { page: Page; actor: Actor }) {
       ) : (
         <Empty>Sin notas. Aquí van las decisiones técnicas y las indicaciones del Admin.</Empty>
       )}
-      <form action={addNote.bind(null, page.id)} className="flex flex-wrap items-end gap-2 rounded-wlp border border-dashed border-stone-300 p-3">
+      <form action={addNote.bind(null, page.id)} className="flex flex-wrap items-end gap-2 rounded-[20px] border border-dashed border-stone-300 p-3">
         <Field label="Nueva nota" className="min-w-48 flex-1">
           <textarea name="body" rows={2} required className={inputCls} placeholder="Ej. El mapa se cambió por imagen por rendimiento." />
         </Field>

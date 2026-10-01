@@ -19,12 +19,10 @@ import { BLOCK_REASONS, type Actor, type QaStatus, type Stage } from "@/lib/type
 import { Field, inputCls } from "./ui";
 
 const btn = {
-  primary:
-    "inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg bg-wlp-yellow px-4 text-sm font-semibold text-stone-900 transition-colors hover:bg-wlp-yellow-hover disabled:opacity-50",
-  ghost:
-    "inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg border border-stone-300 bg-white px-4 text-sm font-semibold text-stone-800 transition-colors hover:border-stone-900 disabled:opacity-50",
+  primary: "btn-signal",
+  ghost: "btn-soft",
   quiet:
-    "inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg px-2.5 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-100 hover:text-stone-900 disabled:opacity-50",
+    "inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg px-2.5 text-sm font-medium text-stone-600 transition-colors hover:bg-white/[.06] hover:text-stone-900 disabled:opacity-50",
 };
 export const buttonCls = btn;
 
@@ -79,8 +77,8 @@ export function ActorSwitch({ actor }: { actor: Actor }) {
   const [pending, start] = useTransition();
   return (
     <div role="group" aria-label="Editando como" className="flex items-center gap-2">
-      <span className="hidden text-xs text-stone-400 lg:inline">Editando como</span>
-      <div className="grid grid-cols-2 gap-0.5 rounded-lg bg-wlp-dark-2 p-0.5">
+      <span className="hidden text-xs text-stone-500 lg:inline">Editando como</span>
+      <div className="seg">
         {(["Producción", "Admin"] as const).map((a) => (
           <button
             key={a}
@@ -88,8 +86,8 @@ export function ActorSwitch({ actor }: { actor: Actor }) {
             aria-pressed={actor === a}
             disabled={pending}
             onClick={() => start(() => setActor(a))}
-            className={`min-h-8 rounded-md px-2.5 text-sm font-semibold transition-colors ${
-              actor === a ? "bg-wlp-yellow text-stone-900" : "text-stone-400 hover:text-white"
+            className={`min-h-8 rounded-full px-3 text-sm font-semibold transition-colors ${
+              actor === a ? "bg-stone-800 text-ink" : "text-stone-500 hover:text-stone-900"
             }`}
           >
             {a}
@@ -121,30 +119,30 @@ export function StageStepper({
     stage === "Cambios solicitados" ? [...PATH.slice(0, 4), "Cambios solicitados", "Publicado"] : stage === "Archivado" ? [...PATH, "Archivado"] : PATH;
   const idx = steps.indexOf(stage);
   return (
-    <ol aria-label="Etapa" className={`flex flex-wrap items-center gap-1 ${pending ? "opacity-60" : ""}`}>
+    <ol aria-label="Etapa" className={`grid min-w-[560px] auto-cols-fr grid-flow-col gap-1 ${pending ? "opacity-60" : ""}`}>
       {steps.map((s, i) => {
         const current = i === idx;
+        const past = i < idx;
         return (
-          <li key={s} className="flex items-center gap-1">
+          <li key={s}>
             <button
               type="button"
               aria-current={current ? "step" : undefined}
               disabled={pending || current}
               onClick={() => confirmWarnings(s, warnings[s]) && start(() => setStage(pageId, workId, s))}
-              className={`min-h-8 rounded-full px-3 text-sm transition-colors ${
-                current
-                  ? s === "Cambios solicitados"
-                    ? "bg-wlp-red font-semibold text-white"
-                    : "bg-wlp-dark font-semibold text-wlp-yellow"
-                  : i < idx
-                    ? "bg-stone-200 text-stone-700 hover:bg-stone-300"
-                    : "text-stone-500 ring-1 ring-inset ring-stone-300 hover:text-stone-900 hover:ring-stone-500"
-              }`}
+              className="flex w-full flex-col gap-2 rounded-xl px-2 py-1.5 text-left transition-colors enabled:hover:bg-black/[.07] disabled:cursor-default"
             >
-              {i < idx && <Check aria-hidden className="mr-1 inline size-3.5 -translate-y-px" />}
-              {s}
+              <span className="flex h-4 items-center text-[11px] font-bold tracking-[0.08em] uppercase">
+                {past ? <Check aria-hidden className="size-3.5" strokeWidth={3} /> : current ? "Ahora" : null}
+              </span>
+              <span className="relative flex h-2 items-center">
+                <span aria-hidden className="track absolute inset-x-0 top-1/2 -translate-y-1/2" />
+                {(past || current) && (
+                  <span aria-hidden className={`relative rounded-full bg-ink ${current ? "h-[7px] w-[88%]" : "h-[5px] w-[70%]"}`} />
+                )}
+              </span>
+              <span className={`text-sm leading-tight ${current ? "font-bold" : past ? "font-semibold" : "font-medium text-ink/70"}`}>{s}</span>
             </button>
-            {i < steps.length - 1 && <span aria-hidden className="h-px w-2 bg-stone-300" />}
           </li>
         );
       })}
@@ -241,7 +239,7 @@ export function StageCTA({
       );
     default:
       return (
-        <span className="inline-flex min-h-10 items-center gap-1.5 text-sm font-semibold text-emerald-700">
+        <span className="inline-flex min-h-10 items-center gap-1.5 text-sm font-semibold text-signal-green">
           <Check aria-hidden className="size-4" /> Publicada
         </span>
       );
@@ -331,12 +329,12 @@ export function InlineField({
           type="button"
           onClick={() => setEditing(true)}
           aria-label={`${label}: ${shown}. Editar`}
-          className={`-ml-1.5 flex min-h-9 max-w-full items-center gap-1.5 rounded-md px-1.5 text-left text-sm font-semibold hover:bg-stone-100 ${
+          className={`-ml-1.5 flex min-h-9 max-w-full items-center gap-1.5 rounded-lg px-1.5 text-left text-sm font-semibold hover:bg-white/[.06] ${
             shown === "—" ? "text-stone-500" : "text-stone-900"
           } ${pending ? "opacity-50" : ""}`}
         >
           <span className="truncate">{shown}</span>
-          {saved && <Check aria-hidden className="size-3.5 text-emerald-700" />}
+          {saved && <Check aria-hidden className="size-3.5 text-signal-green" />}
         </button>
       )}
       <span aria-live="polite" className="sr-only">
@@ -359,27 +357,22 @@ export function BlockToggle({
 }) {
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
+  // El motivo se ve en la franja roja bajo la tile; aquí solo se desbloquea.
   if (blocked) {
     return (
-      <div className="flex flex-wrap items-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-[#A32424]">
-        <Lock aria-hidden className="size-4" />
-        <span className="font-semibold">Bloqueado</span>
-        <span>
-          {blocked.reason} · desde {formatDate(blocked.since)}
-        </span>
-        <button
-          type="button"
-          disabled={pending}
-          onClick={() => {
-            const fd = new FormData();
-            fd.set("reason", "");
-            start(() => setBlocked(pageId, workId, fd));
-          }}
-          className="ml-auto inline-flex min-h-8 items-center gap-1 rounded-md px-2 font-semibold hover:bg-red-100"
-        >
-          <Unlock aria-hidden className="size-4" /> Desbloquear
-        </button>
-      </div>
+      <button
+        type="button"
+        disabled={pending}
+        title={`Bloqueado: ${blocked.reason} · desde ${formatDate(blocked.since)}`}
+        onClick={() => {
+          const fd = new FormData();
+          fd.set("reason", "");
+          start(() => setBlocked(pageId, workId, fd));
+        }}
+        className={`${btn.quiet} text-signal-red hover:text-signal-red`}
+      >
+        <Unlock aria-hidden className="size-4" /> Desbloquear
+      </button>
     );
   }
   if (!open) {
@@ -395,7 +388,7 @@ export function BlockToggle({
         await setBlocked(pageId, workId, fd);
         setOpen(false);
       }}
-      className="flex w-full flex-wrap items-end gap-2 rounded-lg bg-stone-50 p-3"
+      className="flex w-full flex-wrap items-end gap-2 rounded-2xl bg-stone-50 p-3"
     >
       <Field label="Motivo">
         <select name="reason" required defaultValue="" className={inputCls} autoFocus>
@@ -460,9 +453,9 @@ export function AddAdjustment({ pageId, label = "Ajuste" }: { pageId: string; la
 // ── QA y feedback ────────────────────────────────────────────────────────────
 
 const QA_CHOICES: { status: QaStatus; label: string; on: string }[] = [
-  { status: "Pasa", label: "Pasa", on: "bg-emerald-700 text-white ring-emerald-700" },
-  { status: "No pasa", label: "No pasa", on: "bg-wlp-red text-white ring-wlp-red" },
-  { status: "No aplica", label: "No aplica", on: "bg-stone-700 text-white ring-stone-700" },
+  { status: "Pasa", label: "Pasa", on: "bg-signal-green text-ink ring-signal-green" },
+  { status: "No pasa", label: "No pasa", on: "bg-signal-red text-ink ring-signal-red" },
+  { status: "No aplica", label: "No aplica", on: "bg-stone-700 text-ink ring-stone-700" },
 ];
 
 /** Un punto de QA: pasa, no pasa (abre tarea) o no aplica (con motivo). Clic de nuevo = pendiente. */
@@ -505,7 +498,7 @@ export function QaRow({
                   if (c.status === "No aplica") return setAsking(true);
                   set(c.status);
                 }}
-                className={`min-h-8 rounded-md px-2.5 text-xs font-semibold ring-1 ring-inset transition-colors ${
+                className={`min-h-8 rounded-full px-3 text-xs font-semibold ring-1 ring-inset transition-colors ${
                   checked ? c.on : "text-stone-600 ring-stone-300 hover:text-stone-900 hover:ring-stone-500"
                 }`}
               >
@@ -516,7 +509,7 @@ export function QaRow({
         </div>
       </div>
       {status === "No aplica" && reason && <p className="mt-1 text-xs text-stone-600">Motivo: {reason}</p>}
-      {status === "No pasa" && taskOpen && <p className="mt-1 text-xs font-medium text-[#A32424]">Tarea abierta en Tareas</p>}
+      {status === "No pasa" && taskOpen && <p className="mt-1 text-xs font-medium text-signal-red">Tarea abierta en Tareas</p>}
       {asking && (
         <form
           onSubmit={(e) => {
@@ -616,7 +609,7 @@ export function AddLinkButton({ field, children }: { field: string; children: Re
         input?.scrollIntoView({ behavior: "smooth", block: "center" });
         setTimeout(() => input?.focus(), 250);
       }}
-      className="inline-flex min-h-9 items-center gap-1 rounded-lg border border-dashed border-stone-500 px-3 text-sm font-medium text-stone-300 transition-colors hover:border-wlp-yellow hover:text-wlp-yellow"
+      className="inline-flex min-h-10 items-center gap-1 rounded-[0.875rem] border border-dashed border-ink/40 px-3.5 text-sm font-semibold text-ink-2 transition-colors hover:border-ink hover:text-ink"
     >
       <Plus aria-hidden className="size-3.5" />
       {children}
@@ -634,7 +627,7 @@ export function PageConfigForm({ pageId, children }: { pageId: string; children:
       {children}
       <div className="flex items-center gap-3 sm:col-span-2">
         <SubmitButton>Guardar configuración</SubmitButton>
-        <span aria-live="polite" className="text-sm text-emerald-700">
+        <span aria-live="polite" className="text-sm text-signal-green">
           {message}
         </span>
       </div>

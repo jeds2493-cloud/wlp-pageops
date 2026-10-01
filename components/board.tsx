@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useOptimistic, useState, useTransition } from "react";
 import { setStage } from "@/app/actions";
-import { Badge, StagePill } from "@/components/ui";
+import { Badge, stageDot } from "@/components/ui";
 import type { Stage, WorkKind } from "@/lib/types";
 
 export interface BoardCard {
@@ -38,7 +38,7 @@ export function Board({ columns, cards }: { columns: Stage[]; cards: BoardCard[]
 
   return (
     <div className="-mx-4 overflow-x-auto px-4 pb-4 md:mx-0 md:px-0">
-      <div className="flex gap-2">
+      <div className="flex items-start gap-3">
         {columns.map((col) => {
           const items = optimistic.filter((c) => c.stage === col);
           return (
@@ -55,13 +55,14 @@ export function Board({ columns, cards }: { columns: Stage[]; cards: BoardCard[]
                 const card = optimistic.find((c) => c.workId === e.dataTransfer.getData("text/plain"));
                 if (card) drop(card, col);
               }}
-              className={`min-w-40 flex-1 basis-0 rounded-wlp p-2 transition ${
-                over === col ? "bg-[#FDF3CF] ring-2 ring-wlp-yellow" : "bg-stone-100"
-              }`}
+              className={`tile min-w-44 flex-1 basis-0 p-2.5 transition ${over === col ? "ring-2 ring-signal-yellow" : ""}`}
             >
-              <header className="mb-2 flex items-center justify-between px-1">
-                <StagePill stage={col} />
-                <span className="text-xs font-semibold text-stone-600">{items.length}</span>
+              <header className="mb-2.5 flex items-center justify-between gap-2 px-2 pt-1.5">
+                <h2 className="flex min-w-0 items-center gap-2 text-sm font-semibold text-stone-800">
+                  <span aria-hidden className={`size-2.5 shrink-0 rounded-full ${stageDot[col]}`} />
+                  <span className="truncate">{col}</span>
+                </h2>
+                <span className="num text-2xl text-stone-500">{items.length}</span>
               </header>
               <ul className="min-h-16 space-y-2">
                 {items.map((c) => (
@@ -81,15 +82,15 @@ export function Board({ columns, cards }: { columns: Stage[]; cards: BoardCard[]
                         e.dataTransfer.setData("text/plain", c.workId);
                         e.dataTransfer.effectAllowed = "move";
                       }}
-                      className="block cursor-grab rounded-[10px] border border-stone-200 bg-white p-2.5 text-sm transition hover:border-stone-900 active:cursor-grabbing"
+                      className="block cursor-grab rounded-[18px] bg-tile-2 p-3 text-sm shadow-[inset_0_1px_0_rgb(255_255_255/0.06),0_6px_12px_-8px_rgb(0_0_0/0.8)] ring-1 ring-white/[.04] transition hover:ring-stone-400 active:cursor-grabbing"
                     >
-                      <div className="leading-snug font-semibold">{c.title}</div>
+                      <div className="leading-snug font-semibold text-stone-900">{c.title}</div>
                       {c.subtitle && <div className="mt-0.5 text-xs text-stone-500">{c.subtitle}</div>}
                       <div className="mt-2 flex flex-wrap items-center gap-1">
                         <Badge>{c.kind}</Badge>
                         {c.storyPoints !== undefined && <Badge>{c.storyPoints} SP</Badge>}
                         {c.feedback > 0 && <Badge tone="warn">{c.feedback} feedback</Badge>}
-                        {c.blocked && <Badge tone="warn">Bloqueado</Badge>}
+                        {c.blocked && <Badge tone="danger">Bloqueado</Badge>}
                       </div>
                     </Link>
                   </li>

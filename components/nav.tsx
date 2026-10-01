@@ -14,7 +14,7 @@ const items = [
 export function Nav() {
   const pathname = usePathname();
   return (
-    <nav aria-label="Principal" className="flex gap-1 overflow-x-auto overflow-y-hidden">
+    <nav aria-label="Principal" className="seg w-fit max-w-full overflow-x-auto overflow-y-hidden">
       {items.map((it) => {
         const active = it.match(pathname);
         const Icon = it.icon;
@@ -23,14 +23,14 @@ export function Nav() {
             key={it.href}
             href={it.href}
             aria-current={active ? "page" : undefined}
-            className={`relative inline-flex min-h-9 items-center gap-2 whitespace-nowrap rounded-lg px-3 text-sm font-medium transition-colors ${
+            className={`inline-flex min-h-9 items-center gap-2 whitespace-nowrap rounded-full px-3.5 text-sm font-semibold transition-colors ${
               active
-                ? "bg-wlp-dark-2 text-white after:absolute after:inset-x-3 after:bottom-0 after:h-[3px] after:rounded-full after:bg-wlp-yellow"
-                : "text-stone-400 hover:bg-wlp-dark-2 hover:text-white"
+                ? "bg-signal-yellow text-ink shadow-[inset_0_1px_0_rgb(255_255_255/0.5),0_6px_16px_-8px_rgb(242_194_48/0.9)]"
+                : "text-stone-500 hover:bg-white/[.06] hover:text-stone-900"
             }`}
           >
-            <Icon aria-hidden className={`size-4 ${active ? "text-wlp-yellow" : ""}`} />
-            {it.label}
+            <Icon aria-hidden className="size-4" />
+            <span className={active ? "" : "sr-only sm:not-sr-only"}>{it.label}</span>
           </Link>
         );
       })}

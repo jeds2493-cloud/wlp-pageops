@@ -12,7 +12,7 @@ export function LoginForm({ next }: { next: string }) {
     <form action={action} className="space-y-4">
       <input type="hidden" name="next" value={next} />
       <label className="block">
-        <span className="mb-1 block text-sm font-medium text-stone-700">Contraseña</span>
+        <span className="mb-1.5 block text-sm font-medium text-stone-600">Contraseña</span>
         <input
           type="password"
           name="password"
@@ -25,7 +25,7 @@ export function LoginForm({ next }: { next: string }) {
         />
       </label>
       {error && (
-        <p id="login-error" role="alert" className="text-sm font-medium text-[#A32424]">
+        <p id="login-error" role="alert" className="text-sm font-medium text-signal-red">
           {error}
         </p>
       )}

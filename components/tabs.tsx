@@ -27,44 +27,54 @@ export function Tabs({ tabs, initial }: { tabs: TabDef[]; initial?: string }) {
   };
 
   return (
-    <div>
-      <div role="tablist" className="mb-4 flex gap-1 overflow-x-auto overflow-y-hidden border-b border-stone-200">
-        {tabs.map((t, i) => {
-          const selected = t.id === current.id;
-          return (
-            <button
-              key={t.id}
-              ref={(el) => {
-                refs.current[i] = el;
-              }}
-              id={`${base}-tab-${t.id}`}
-              role="tab"
-              aria-selected={selected}
-              aria-controls={`${base}-panel-${t.id}`}
-              tabIndex={selected ? 0 : -1}
-              onClick={() => setActive(t.id)}
-              onKeyDown={(e) => onKey(e, i)}
-              className={`-mb-px inline-flex min-h-11 items-center gap-1.5 whitespace-nowrap border-b-2 px-3 text-sm transition-colors ${
-                selected ? "border-wlp-yellow font-semibold text-stone-900" : "border-transparent text-stone-600 hover:text-stone-900"
-              }`}
-            >
-              {t.label}
-              {t.count !== undefined && (
-                <span
-                  className={`rounded-full px-1.5 text-xs font-semibold ${
-                    t.alert ? "bg-wlp-yellow text-stone-900" : "bg-stone-100 text-stone-600"
+    <section className="tile-folder">
+      <div className="flex items-end">
+        <div className="tile-tab px-3 pt-3">
+          <div role="tablist" aria-label="Secciones del trabajo" className="seg w-fit max-w-full overflow-x-auto overflow-y-hidden">
+            {tabs.map((t, i) => {
+              const selected = t.id === current.id;
+              return (
+                <button
+                  key={t.id}
+                  ref={(el) => {
+                    refs.current[i] = el;
+                  }}
+                  id={`${base}-tab-${t.id}`}
+                  role="tab"
+                  aria-selected={selected}
+                  aria-controls={`${base}-panel-${t.id}`}
+                  tabIndex={selected ? 0 : -1}
+                  onClick={() => setActive(t.id)}
+                  onKeyDown={(e) => onKey(e, i)}
+                  className={`inline-flex min-h-9 items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 text-sm font-semibold transition-colors ${
+                    selected ? "bg-stone-800 text-ink" : "text-stone-500 hover:bg-white/[.06] hover:text-stone-900"
                   }`}
                 >
-                  {t.count}
-                </span>
-              )}
-            </button>
-          );
-        })}
+                  {t.label}
+                  {t.count !== undefined && (
+                    <span
+                      className={`num rounded-full px-1.5 py-0.5 text-sm ${
+                        t.alert ? "bg-signal-red text-ink" : selected ? "bg-ink/10" : "bg-stone-200 text-stone-700"
+                      }`}
+                    >
+                      {t.count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        <div className="flex-1" />
       </div>
-      <div role="tabpanel" id={`${base}-panel-${current.id}`} aria-labelledby={`${base}-tab-${current.id}`}>
+      <div
+        role="tabpanel"
+        id={`${base}-panel-${current.id}`}
+        aria-labelledby={`${base}-tab-${current.id}`}
+        className="tile-body p-4 md:p-6"
+      >
         {current.content}
       </div>
-    </div>
+    </section>
   );
 }

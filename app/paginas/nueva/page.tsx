@@ -13,7 +13,7 @@ export default async function NuevaPagina({ searchParams }: PageProps<"/paginas/
     <>
       <Masthead
         crumbs={
-          <Link href="/" className="hover:text-white hover:underline">
+          <Link href="/" className="hover:text-ink hover:underline">
             Páginas
           </Link>
         }
@@ -21,7 +21,7 @@ export default async function NuevaPagina({ searchParams }: PageProps<"/paginas/
         meta="Se crea con su trabajo principal y el checklist de QA de su tipo."
       />
       <PageBody>
-      <Card className="max-w-2xl">
+      <Card title="Datos de la página" className="max-w-3xl">
         <form action={createPage} className="grid gap-4 sm:grid-cols-2">
           <Field label="Título" className="sm:col-span-2">
             <input name="title" required autoFocus className={inputCls} placeholder="Ej. Our Values — V2" />
