@@ -5,7 +5,6 @@ import { useFormStatus } from "react-dom";
 import { Check, Lock, Plus, RotateCcw, Unlock, X } from "lucide-react";
 import {
   addAdjustment,
-  addNote,
   closeReview,
   setActor,
   setBlocked,
@@ -16,7 +15,7 @@ import {
   updatePage,
 } from "@/app/actions";
 import { formatDate } from "@/lib/logic";
-import { BLOCK_REASONS, NOTE_KINDS, type Actor, type QaStatus, type Stage } from "@/lib/types";
+import { BLOCK_REASONS, type Actor, type QaStatus, type Stage } from "@/lib/types";
 import { Field, inputCls } from "./ui";
 
 const btn = {
@@ -454,43 +453,6 @@ export function AddAdjustment({ pageId, label = "Ajuste" }: { pageId: string; la
       <button type="button" aria-label="Cancelar" onClick={() => setOpen(false)} className={btn.quiet}>
         <X aria-hidden className="size-4" />
       </button>
-    </form>
-  );
-}
-
-export function NoteComposer({ pageId, actor }: { pageId: string; actor: Actor }) {
-  const [open, setOpen] = useState(false);
-  if (!open) {
-    return (
-      <button type="button" onClick={() => setOpen(true)} className={`${btn.ghost} w-full`}>
-        <Plus aria-hidden className="size-4" /> Agregar nota
-      </button>
-    );
-  }
-  return (
-    <form
-      action={async (fd) => {
-        await addNote(pageId, fd);
-        setOpen(false);
-      }}
-      className="space-y-2"
-    >
-      <Field label="Tipo">
-        <select name="kind" defaultValue={actor === "Admin" ? "Indicación del Admin" : "Decisión técnica"} className={inputCls}>
-          {NOTE_KINDS.map((k) => (
-            <option key={k}>{k}</option>
-          ))}
-        </select>
-      </Field>
-      <Field label="Nota">
-        <textarea name="body" rows={3} required autoFocus className={inputCls} placeholder="Ej. El mapa se cambió por imagen por rendimiento." />
-      </Field>
-      <div className="flex gap-2">
-        <SubmitButton>Guardar nota</SubmitButton>
-        <button type="button" onClick={() => setOpen(false)} className={btn.quiet}>
-          Cancelar
-        </button>
-      </div>
     </form>
   );
 }

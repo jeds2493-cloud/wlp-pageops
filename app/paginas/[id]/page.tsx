@@ -3,18 +3,16 @@ import { requirePage } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { cookies } from "next/headers";
-import { Accessibility, ArrowRight, Check, ChevronRight, CircleDot, RotateCcw, Settings2, Trash2, X } from "lucide-react";
+import { Accessibility, Check, ChevronRight, RotateCcw, Settings2, Trash2 } from "lucide-react";
 import {
-  addFeedback,
+  addNote,
   addTask,
   deleteNote,
   deletePage,
   deleteTask,
   deleteWork,
   dismissWarnings,
-  feedbackToTask,
   resetQa,
-  setFeedbackStatus,
   setStage,
   toggleTask,
 } from "@/app/actions";
@@ -24,9 +22,7 @@ import {
   AddLinkButton,
   BlockToggle,
   buttonCls,
-  DiscardFeedback,
   InlineField,
-  NoteComposer,
   PageConfigForm,
   QaRow,
   StageCTA,
@@ -39,7 +35,6 @@ import { Badge, Card, Empty, ExternalLink, Field, inputCls, Masthead, PageBody, 
 import {
   daysSince,
   editUrl,
-  formatDate,
   formatDateTime,
   getPage,
   mainWork,
@@ -51,112 +46,18 @@ import {
   stageWarnings,
 } from "@/lib/data";
 import {
+  NOTE_KINDS,
   PAGE_TYPES,
   PRIORITIES,
   STAGES,
   STORY_POINTS,
   TASK_CATEGORIES,
   type Actor,
-  type FeedbackItem,
   type Page,
   type WorkItem,
 } from "@/lib/types";
 
 const ACTIVITY_PREVIEW = 8;
-
-function FeedbackStatus({ f }: { f: FeedbackItem }) {
-  if (f.status === "Resuelto")
-    return (
-      <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700">
-        <Check aria-hidden className="size-3.5" /> Resuelto
-      </span>
-    );
-  if (f.status === "Descartado")
-    return (
-      <span className="inline-flex items-center gap-1 text-xs font-semibold text-stone-500">
-        <X aria-hidden className="size-3.5" /> Descartado
-      </span>
-    );
-  return (
-    <span className="inline-flex items-center gap-1 text-xs font-semibold text-[#6B4E00]">
-      <CircleDot aria-hidden className="size-3.5" /> Pendiente
-    </span>
-  );
-}
-
-function ReviewsTab({ page, w, now }: { page: Page; w: WorkItem; now: Date }) {
-  if (!w.reviews.length) {
-    return <Empty>Aún no hay revisiones. Cuando el trabajo esté listo, usa «Solicitar revisión» arriba.</Empty>;
-  }
-  return (
-    <div className="space-y-3">
-      {[...w.reviews].reverse().map((r) => {
-        const isOpen = !r.closedAt;
-        return (
-          <Card
-            key={r.id}
-            flush
-            title={
-              <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                Revisión #{r.number}
-                <span className="font-normal text-stone-500">
-                  {formatDate(r.requestedAt)}
-                  {isOpen && !r.result && ` · ${daysSince(r.requestedAt, now)} días esperando al Admin`}
-                </span>
-              </span>
-            }
-            action={r.result ? <Badge tone={r.result === "Aprobado" ? "neutral" : "warn"}>{r.result}</Badge> : <Badge tone="info">Abierta</Badge>}
-          >
-            {r.feedback.length ? (
-              <ul className="divide-y divide-stone-100">
-                {r.feedback.map((f) => (
-                  <li key={f.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-5 py-2.5">
-                    <div className="min-w-48 flex-1">
-                      <p className={`text-sm ${f.status === "Descartado" ? "text-stone-500 line-through" : "text-stone-900"}`}>{f.text}</p>
-                      <p className="mt-0.5 flex flex-wrap items-center gap-2">
-                        <FeedbackStatus f={f} />
-                        {f.discardReason && <span className="text-xs text-stone-500">{f.discardReason}</span>}
-                        {f.taskId && <span className="text-xs text-stone-500">· convertido en tarea</span>}
-                        {f.author === "Producción" && <span className="text-xs text-stone-500">· capturado por Producción</span>}
-                      </p>
-                    </div>
-                    {f.status === "Pendiente" ? (
-                      <div className="flex flex-wrap items-center">
-                        {!f.taskId && (
-                          <ActionButton action={feedbackToTask.bind(null, page.id, w.id, r.id, f.id)}>
-                            <ArrowRight aria-hidden className="size-4" /> Tarea
-                          </ActionButton>
-                        )}
-                        <ActionButton action={setFeedbackStatus.bind(null, page.id, w.id, r.id, f.id, "Resuelto", undefined)}>
-                          <Check aria-hidden className="size-4" /> Resuelto
-                        </ActionButton>
-                        <DiscardFeedback pageId={page.id} workId={w.id} reviewId={r.id} feedbackId={f.id} />
-                      </div>
-                    ) : (
-                      <ActionButton action={setFeedbackStatus.bind(null, page.id, w.id, r.id, f.id, "Pendiente", undefined)}>
-                        <RotateCcw aria-hidden className="size-4" /> Reabrir
-                      </ActionButton>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="px-5 py-4 text-sm text-stone-500">Sin feedback todavía.</p>
-            )}
-            {isOpen && (
-              <form action={addFeedback.bind(null, page.id, w.id, r.id)} className="space-y-2 border-t border-stone-100 px-5 py-4">
-                <Field label="Agregar feedback (un punto por línea)">
-                  <textarea name="text" rows={3} className={inputCls} placeholder={"Bajar la saturación del amarillo\nRevisar el hero en celular"} />
-                </Field>
-                <SubmitButton variant="ghost">Agregar puntos</SubmitButton>
-              </form>
-            )}
-          </Card>
-        );
-      })}
-    </div>
-  );
-}
 
 function TasksTab({ page, w }: { page: Page; w: WorkItem }) {
   return (
@@ -377,9 +278,7 @@ export default async function PaginaDetalle({ params, searchParams }: PageProps<
   const main = mainWork(page);
   const w = page.works.find((x) => x.id === selectedId) ?? main;
   const qa = qaProgress(w);
-  const fb = pendingFeedback(w);
-  const initialTab =
-    fb > 0 || w.stage === "Revisión Admin" || w.stage === "Cambios solicitados" ? "revisiones" : w.stage === "QA" ? "qa" : "tareas";
+  const initialTab = w.stage === "QA" ? "qa" : "tareas";
   const preview = previewUrl(page);
   const edit = editUrl(page);
 
@@ -481,7 +380,6 @@ export default async function PaginaDetalle({ params, searchParams }: PageProps<
             key={`${w.id}-${initialTab}`}
             initial={initialTab}
             tabs={[
-              { id: "revisiones", label: "Revisiones", count: fb || undefined, alert: fb > 0, content: <ReviewsTab page={page} w={w} now={now} /> },
               {
                 id: "tareas",
                 label: "Tareas",
@@ -489,6 +387,7 @@ export default async function PaginaDetalle({ params, searchParams }: PageProps<
                 content: <TasksTab page={page} w={w} />,
               },
               { id: "qa", label: qa.total ? `QA ${qa.done}/${qa.total}` : "QA", count: qa.failing || undefined, alert: qa.failing > 0, content: <QaTab page={page} w={w} /> },
+              { id: "notas", label: "Notas", count: page.notes.length || undefined, content: <NotesTab page={page} actor={actor} /> },
             ]}
           />
           <details id="config" className="group rounded-wlp border border-stone-200 bg-white">
@@ -537,41 +436,8 @@ export default async function PaginaDetalle({ params, searchParams }: PageProps<
 
         <aside
           className="space-y-4 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:self-start lg:overflow-y-auto lg:overscroll-contain"
-          aria-label="Notas y actividad de la página"
+          aria-label="Actividad de la página"
         >
-          <Card title="Notas">
-            <div className="space-y-3">
-              <NoteComposer pageId={page.id} actor={actor} />
-              {page.notes.length ? (
-                <ul className="space-y-3">
-                  {page.notes.map((n) => (
-                    <li key={n.id} className="border-t border-stone-100 pt-3">
-                      <div className="mb-1 flex items-start gap-2">
-                        <div className="min-w-0 flex-1">
-                          <p className="text-xs font-semibold text-stone-800">{n.kind}</p>
-                          <p className="text-xs text-stone-500">
-                            {n.author} · {formatDateTime(n.createdAt)}
-                          </p>
-                        </div>
-                        <ActionButton
-                          action={deleteNote.bind(null, page.id, n.id)}
-                          confirmText="¿Eliminar esta nota?"
-                          label="Eliminar nota"
-                          className="rounded p-1 text-stone-500 hover:bg-stone-100 hover:text-wlp-red"
-                        >
-                          <Trash2 aria-hidden className="size-4" />
-                        </ActionButton>
-                      </div>
-                      <p className="text-sm whitespace-pre-line text-stone-800">{n.body}</p>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-sm text-stone-500">Decisiones técnicas e indicaciones del Admin van aquí.</p>
-              )}
-            </div>
-          </Card>
-
           <Card title="Actividad">
             <ol className="space-y-3">
               {page.activity.slice(0, ACTIVITY_PREVIEW).map((a) => (
@@ -608,5 +474,49 @@ export default async function PaginaDetalle({ params, searchParams }: PageProps<
 
       </PageBody>
     </>
+  );
+}
+
+function NotesTab({ page, actor }: { page: Page; actor: Actor }) {
+  return (
+    <div className="space-y-3">
+      {page.notes.length ? (
+        <ul className="divide-y divide-stone-100 rounded-wlp border border-stone-200 bg-white">
+          {page.notes.map((n) => (
+            <li key={n.id} className="flex items-start gap-3 px-4 py-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs text-stone-500">
+                  <span className="font-semibold text-stone-800">{n.kind}</span> · {n.author} · {formatDateTime(n.createdAt)}
+                </p>
+                <p className="mt-1 text-sm whitespace-pre-line text-stone-800">{n.body}</p>
+              </div>
+              <ActionButton
+                action={deleteNote.bind(null, page.id, n.id)}
+                confirmText="¿Eliminar esta nota?"
+                label="Eliminar nota"
+                className={`${buttonCls.quiet} hover:text-wlp-red`}
+              >
+                <Trash2 aria-hidden className="size-4" />
+              </ActionButton>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <Empty>Sin notas. Aquí van las decisiones técnicas y las indicaciones del Admin.</Empty>
+      )}
+      <form action={addNote.bind(null, page.id)} className="flex flex-wrap items-end gap-2 rounded-wlp border border-dashed border-stone-300 p-3">
+        <Field label="Nueva nota" className="min-w-48 flex-1">
+          <textarea name="body" rows={2} required className={inputCls} placeholder="Ej. El mapa se cambió por imagen por rendimiento." />
+        </Field>
+        <Field label="Tipo">
+          <select name="kind" defaultValue={actor === "Admin" ? "Indicación del Admin" : "Decisión técnica"} className={inputCls}>
+            {NOTE_KINDS.map((k) => (
+              <option key={k}>{k}</option>
+            ))}
+          </select>
+        </Field>
+        <SubmitButton variant="ghost">Agregar</SubmitButton>
+      </form>
+    </div>
   );
 }
