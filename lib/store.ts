@@ -19,26 +19,34 @@ const STORE_NAME = "pageops-v2";
 const INDEX_KEY = "index";
 const pageKey = (id: string) => `page/${id}`;
 
-function blobsBackend(): Backend | undefined {
+/** ¿Hay contexto de Netlify Blobs? (en local no). */
+function blobsAvailable(): boolean {
   try {
-    const store = getStore({ name: STORE_NAME, consistency: "strong" });
-    // Cada falla deja en el registro de Netlify (Logs → Functions) qué operación y
-    // qué clave fallaron; la pantalla de error solo muestra un código.
-    const traced = <T>(op: string, key: string, run: () => Promise<T>) =>
-      run().catch((err: unknown) => {
-        console.error(`[pageops] Blobs ${op} "${key}" falló:`, err);
-        throw err;
-      });
-    return {
-      get: <T>(key: string) =>
-        traced("get", key, async () => ((await store.get(key, { type: "json" })) ?? undefined) as T | undefined),
-      set: (key, value) => traced("set", key, () => store.setJSON(key, value).then(() => undefined)),
-      del: (key) => traced("delete", key, () => store.delete(key)),
-    };
+    getStore(STORE_NAME);
+    return true;
   } catch {
-    // Fuera de Netlify no hay contexto de Blobs: se usa el archivo local.
-    return undefined;
+    return false;
   }
+}
+
+function blobsBackend(): Backend {
+  // Netlify da a cada petición un token de Blobs que caduca. La conexión se pide en
+  // cada operación: si se guardara la del primer request, una función "caliente"
+  // seguiría usando un token vencido (error 401 "Token expired").
+  const store = () => getStore({ name: STORE_NAME, consistency: "strong" });
+  // Cada falla deja en el registro de Netlify (Logs → Functions) qué operación y
+  // qué clave fallaron; la pantalla de error solo muestra un código.
+  const traced = <T>(op: string, key: string, run: () => Promise<T>) =>
+    run().catch((err: unknown) => {
+      console.error(`[pageops] Blobs ${op} "${key}" falló:`, err);
+      throw err;
+    });
+  return {
+    get: <T>(key: string) =>
+      traced("get", key, async () => ((await store().get(key, { type: "json" })) ?? undefined) as T | undefined),
+    set: (key, value) => traced("set", key, () => store().setJSON(key, value).then(() => undefined)),
+    del: (key) => traced("delete", key, () => store().delete(key)),
+  };
 }
 
 function fileBackend(): Backend {
@@ -79,10 +87,12 @@ function fileBackend(): Backend {
   };
 }
 
-let backend: Backend | undefined;
+let local: Backend | undefined;
 function db(): Backend {
-  backend ??= blobsBackend() ?? fileBackend();
-  return backend;
+  // En Netlify, un backend nuevo por llamada (token vigente); en local, el archivo.
+  if (blobsAvailable()) return blobsBackend();
+  local ??= fileBackend();
+  return local;
 }
 
 // ── Migraciones ─────────────────────────────────────────────────────────────
