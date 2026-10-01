@@ -10,6 +10,7 @@ import type {
   TaskCategory,
   WorkItem,
 } from "./types";
+import { qaItems } from "./templates";
 
 const IMPORTED_AT = "2026-09-30";
 
@@ -139,7 +140,9 @@ function buildPage(row: Row): Page {
     storyPoints: row.sp,
     dueDate: row.dueDate,
     deliveredAt: row.deliveredAt,
+    stageSince: stage === "Revisión Admin" || stage === "Cambios solicitados" ? row.deliveredAt : undefined,
     tasks: [],
+    qa: qaItems(row.type, `${id}-w1`),
     reviews:
       row.stage === "Revisión Admin" && row.deliveredAt
         ? [
@@ -148,7 +151,7 @@ function buildPage(row: Row): Page {
               number: 1,
               requestedAt: row.deliveredAt,
               result: feedback.length ? "Cambios solicitados" : undefined,
-              feedback,
+              feedback: feedback.map((f) => ({ ...f, author: "Admin" as const })),
             },
           ]
         : [],
@@ -184,6 +187,7 @@ function buildPage(row: Row): Page {
       storyPoints: 1,
       tasks: [task],
       reviews: [],
+      qa: [],
     });
     activity.push({
       id: `${id}-a2`,

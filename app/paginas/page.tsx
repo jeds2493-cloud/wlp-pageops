@@ -36,7 +36,14 @@ export default async function PaginasPage({ searchParams }: PageProps<"/paginas"
 
   return (
     <>
-      <PageHeader eyebrow="Producción web" title="Páginas" subtitle={`${all.length} páginas dadas de alta`} />
+      <PageHeader eyebrow="Producción web" title="Páginas" subtitle={`${all.length} páginas dadas de alta`}>
+        <Link
+          href={tipo ? `/paginas/nueva?tipo=${encodeURIComponent(tipo)}` : "/paginas/nueva"}
+          className="rounded-lg bg-wlp-yellow px-4 py-2 text-sm font-semibold text-stone-900 transition hover:bg-wlp-yellow-hover active:scale-[0.97]"
+        >
+          + Nueva página
+        </Link>
+      </PageHeader>
 
       <div className="mb-4 flex gap-1 overflow-x-auto border-b border-stone-200">
         {[undefined, ...PAGE_TYPES].map((t) => {

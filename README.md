@@ -3,12 +3,21 @@
 Control de producción de páginas de welovepaving.com. El plan completo está en
 [`docs/PLAN.md`](docs/PLAN.md).
 
-## Estado: Fase 0
+## Estado: Fase 1 (edición, sin login)
 
-La app muestra en modo lectura las 25 páginas de la hoja (Inicio, Páginas, Detalle,
-Tablero y Revisiones). Los datos viven en `lib/seed.ts`; `lib/data.ts` es la única
-capa que los lee, así que en Fase 1 se cambia por consultas a Supabase sin tocar
-las pantallas. El esquema de base de datos ya está listo en `supabase/schema.sql`.
+Todo se edita desde la app: páginas nuevas, datos de la página, etapas (selector o
+arrastrando en el Tablero), bloqueos, fechas, story points, ajustes, revisiones con
+feedback punto por punto (→ tarea, resuelto, descartado), tareas, QA y notas. Cada
+cambio queda en la Actividad. El selector "Editando como" (Producción / Admin)
+firma notas, feedback y actividad mientras no haya login.
+
+**Datos:** `lib/store.ts` guarda en **Netlify Blobs** cuando corre en Netlify y en
+`.data/store.json` en local. La primera vez se carga con las 25 páginas de la hoja
+(`lib/seed.ts`). `/respaldo` descarga todo en JSON. El esquema de Supabase para
+cuando haya login sigue en `supabase/schema.sql`.
+
+> Sin login, cualquiera con acceso al sitio puede editar: mantén el sitio en
+> modo privado en Netlify.
 
 ## Correr en local
 

@@ -18,21 +18,36 @@ export const STAGES = [
 export type Stage = (typeof STAGES)[number];
 
 export type WorkKind = "Página V2" | "Ajuste";
-export type Priority = "Urgente" | "Alta" | "Normal" | "Baja";
+export const PRIORITIES = ["Urgente", "Alta", "Normal", "Baja"] as const;
+export type Priority = (typeof PRIORITIES)[number];
+export const STORY_POINTS = [1, 2, 3, 5, 8, 13] as const;
 
-export type TaskCategory =
-  | "Diseño/UI"
-  | "Color"
-  | "Responsive"
-  | "Copy"
-  | "Rendimiento"
-  | "Imágenes"
-  | "SEO"
-  | "Accesibilidad"
-  | "Tracking"
-  | "WordPress"
-  | "Formularios"
-  | "Bug";
+export const BLOCK_REASONS = [
+  "Decisión del Admin",
+  "Contenido/copy",
+  "Fotos/video",
+  "Accesos",
+  "Dependencia técnica",
+  "Otro",
+] as const;
+
+export type Actor = "Producción" | "Admin";
+
+export const TASK_CATEGORIES = [
+  "Diseño/UI",
+  "Color",
+  "Responsive",
+  "Copy",
+  "Rendimiento",
+  "Imágenes",
+  "SEO",
+  "Accesibilidad",
+  "Tracking",
+  "WordPress",
+  "Formularios",
+  "Bug",
+] as const;
+export type TaskCategory = (typeof TASK_CATEGORIES)[number];
 
 export interface Task {
   id: string;
@@ -49,6 +64,9 @@ export interface FeedbackItem {
   id: string;
   text: string;
   status: FeedbackStatus;
+  author?: Actor;
+  discardReason?: string;
+  taskId?: string;
 }
 
 export interface Review {
@@ -72,24 +90,39 @@ export interface WorkItem {
   dueDate?: string;
   deliveredAt?: string;
   blocked?: { reason: string; since: string };
+  /** Desde cuándo está en la etapa actual (fecha ISO). */
+  stageSince?: string;
   tasks: Task[];
   reviews: Review[];
+  qa: QaItem[];
 }
 
-export type NoteKind = "Decisión técnica" | "Indicación del Admin" | "General";
+export type QaStatus = "Pendiente" | "OK" | "N/A";
+
+export interface QaItem {
+  id: string;
+  group: string;
+  label: string;
+  status: QaStatus;
+}
+
+export const NOTE_KINDS = ["Decisión técnica", "Indicación del Admin", "General"] as const;
+export type NoteKind = (typeof NOTE_KINDS)[number];
 
 export interface Note {
   id: string;
   kind: NoteKind;
-  author: "Producción" | "Admin";
+  author: Actor;
   body: string;
   createdAt: string;
 }
 
 export interface ActivityEntry {
   id: string;
+  /** Fecha (YYYY-MM-DD) o fecha y hora ISO. */
   at: string;
   text: string;
+  actor?: Actor;
 }
 
 export interface Page {
@@ -100,6 +133,7 @@ export interface Page {
   wpPageId?: number;
   publicUrl?: string;
   docsUrl?: string;
+  figmaUrl?: string;
   /** Problemas detectados al importar desde la hoja. */
   importWarnings: string[];
   works: WorkItem[];

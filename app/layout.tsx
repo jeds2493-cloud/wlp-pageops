@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { Barlow_Semi_Condensed, IBM_Plex_Mono, Inter } from "next/font/google";
+import { cookies } from "next/headers";
+import { ActorSwitch } from "@/components/edit";
 import { Nav } from "@/components/nav";
 import "./globals.css";
 
@@ -17,7 +19,8 @@ export const metadata: Metadata = {
   description: "Control de producción de páginas de welovepaving.com",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const actor = (await cookies()).get("pageops_actor")?.value === "Admin" ? "Admin" : "Producción";
   return (
     <html lang="es" className={`${inter.variable} ${barlow.variable} ${plexMono.variable} h-full antialiased`}>
       <body className="min-h-full bg-stone-50 font-sans text-stone-900">
@@ -31,9 +34,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
               </div>
             </div>
             <Nav />
-            <p className="mt-8 hidden font-mono text-[10px] leading-relaxed tracking-[0.08em] text-stone-500 uppercase md:block">
-              Fase 0 · solo lectura
-            </p>
+            <ActorSwitch actor={actor} />
+            <a
+              href="/respaldo"
+              className="mt-6 hidden font-mono text-[10px] tracking-[0.12em] text-stone-500 uppercase hover:text-wlp-yellow md:block"
+            >
+              ↓ Descargar respaldo
+            </a>
           </aside>
           <main className="min-w-0 flex-1 px-4 py-6 md:px-10 md:py-10">
             <div className="mx-auto max-w-6xl">{children}</div>

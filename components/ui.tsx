@@ -121,3 +121,15 @@ export function ExternalLink({
 export function Empty({ children }: { children: ReactNode }) {
   return <p className="py-6 text-center text-sm text-stone-400">{children}</p>;
 }
+
+export const inputCls =
+  "w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 placeholder:text-stone-400 focus:border-stone-900 focus:outline-none";
+
+export function Field({ label, children, className = "" }: { label: string; children: ReactNode; className?: string }) {
+  return (
+    <label className={`block ${className}`}>
+      <span className="mb-1 block font-mono text-[10.5px] tracking-[0.1em] text-stone-500 uppercase">{label}</span>
+      {children}
+    </label>
+  );
+}

@@ -1,4 +1,4 @@
-import type { PageType } from "./types";
+import type { PageType, QaItem } from "./types";
 
 export interface QaGroup {
   group: string;
@@ -45,3 +45,18 @@ export function qaTemplate(type: PageType): QaGroup[] {
   const extra = extras[type];
   return extra ? [...base, extra] : base;
 }
+
+/** Checklist de QA listo para copiarse a un trabajo nuevo. */
+export function qaItems(type: PageType, prefix: string): QaItem[] {
+  return qaTemplate(type).flatMap((g, gi) =>
+    g.items.map((label, i) => ({ id: `${prefix}-q${gi}-${i}`, group: g.group, label, status: "Pendiente" as const })),
+  );
+}
+
+/** Story points sugeridos por tipo de página (anclas del plan). */
+export const SUGGESTED_SP: Record<PageType, number> = {
+  "Páginas Principales": 5,
+  "Servicios Core": 5,
+  Empleos: 3,
+  "Landing Pages": 3,
+};
