@@ -95,7 +95,17 @@ export function Card({
   );
 }
 
-export function ExternalLink({ href, children, primary = false }: { href: string; children: ReactNode; primary?: boolean }) {
+export function ExternalLink({
+  href,
+  children,
+  primary = false,
+  onDark = false,
+}: {
+  href: string;
+  children: ReactNode;
+  primary?: boolean;
+  onDark?: boolean;
+}) {
   return (
     <a
       href={href}
@@ -104,7 +114,9 @@ export function ExternalLink({ href, children, primary = false }: { href: string
       className={`inline-flex min-h-9 items-center gap-1.5 rounded-lg px-3 text-sm font-semibold transition-colors ${
         primary
           ? "bg-wlp-yellow text-stone-900 hover:bg-wlp-yellow-hover"
-          : "border border-stone-300 bg-white text-stone-800 hover:border-stone-900"
+          : onDark
+            ? "border border-stone-600 text-white hover:border-wlp-yellow hover:text-wlp-yellow"
+            : "border border-stone-300 bg-white text-stone-800 hover:border-stone-900"
       }`}
     >
       {children}
@@ -127,4 +139,40 @@ export function Field({ label, children, className = "" }: { label: string; chil
       {children}
     </label>
   );
+}
+
+/** Encabezado de pantalla: franja de asfalto con la línea de carril amarilla. */
+export function Masthead({
+  crumbs,
+  title,
+  meta,
+  actions,
+  children,
+}: {
+  crumbs?: ReactNode;
+  title: string;
+  meta?: ReactNode;
+  actions?: ReactNode;
+  children?: ReactNode;
+}) {
+  return (
+    <header className="asphalt text-white">
+      <div className="mx-auto max-w-6xl px-4 pt-6 pb-6 md:px-10 md:pt-9">
+        {crumbs && <nav aria-label="Ruta" className="mb-3 flex flex-wrap items-center gap-1 text-sm text-stone-400">{crumbs}</nav>}
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div className="min-w-0">
+            <h1 className="font-display text-4xl leading-[0.95] font-extrabold text-balance uppercase md:text-5xl">{title}</h1>
+            {meta && <div className="mt-2 text-sm text-stone-300">{meta}</div>}
+          </div>
+          {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
+        </div>
+        {children}
+      </div>
+      <div className="lane-line" aria-hidden />
+    </header>
+  );
+}
+
+export function PageBody({ children }: { children: ReactNode }) {
+  return <div className="mx-auto max-w-6xl px-4 py-6 md:px-10 md:py-8">{children}</div>;
 }

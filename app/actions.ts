@@ -144,14 +144,12 @@ export async function updatePage(pageId: string, fd: FormData) {
       wpPageId: wp,
       publicUrl: optional(fd, "publicUrl"),
       docsUrl: optional(fd, "docsUrl"),
-      figmaUrl: optional(fd, "figmaUrl"),
     };
     const labels: Record<keyof typeof next, string> = {
       channel: "Canal",
       wpPageId: "ID de WordPress",
       publicUrl: "URL pública",
       docsUrl: "Documentación",
-      figmaUrl: "Figma",
     };
     for (const k of Object.keys(next) as (keyof typeof next)[]) {
       if (page[k] !== next[k]) {
@@ -172,7 +170,7 @@ export async function dismissWarnings(pageId: string) {
 export async function deletePage(pageId: string) {
   await removePage(pageId);
   revalidatePath("/", "layout");
-  redirect("/paginas");
+  redirect("/");
 }
 
 // ── Trabajos y etapas ────────────────────────────────────────────────────────

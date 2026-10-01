@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import { Download } from "lucide-react";
 import { ActorSwitch } from "@/components/edit";
 import { Nav } from "@/components/nav";
+import { Shortcuts } from "@/components/shortcuts";
 import "./globals.css";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
@@ -43,9 +44,8 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
               <Download aria-hidden className="size-4" /> Descargar respaldo
             </a>
           </aside>
-          <main className="min-w-0 flex-1 px-4 py-6 md:px-10 md:py-10">
-            <div className="mx-auto max-w-6xl">{children}</div>
-          </main>
+          <main className="min-w-0 flex-1">{children}</main>
+          <Shortcuts />
         </div>
       </body>
     </html>

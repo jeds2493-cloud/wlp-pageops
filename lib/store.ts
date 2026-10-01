@@ -13,7 +13,8 @@ interface Backend {
   del(key: string): Promise<void>;
 }
 
-const STORE_NAME = "pageops";
+// v2: reinicio del 1 oct 2026. El almacén anterior ("pageops") queda intacto como respaldo.
+const STORE_NAME = "pageops-v2";
 const INDEX_KEY = "index";
 const pageKey = (id: string) => `page/${id}`;
 
@@ -34,7 +35,7 @@ function blobsBackend(): Backend | undefined {
 }
 
 function fileBackend(): Backend {
-  const file = path.join(process.cwd(), ".data", "store.json");
+  const file = path.join(process.cwd(), ".data", `${STORE_NAME}.json`);
   const read = async (): Promise<Record<string, unknown>> => {
     try {
       return JSON.parse(await readFile(file, "utf8"));

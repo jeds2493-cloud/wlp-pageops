@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createPage } from "@/app/actions";
 import { SubmitButton } from "@/components/edit";
-import { Card, Field, inputCls, PageHeader } from "@/components/ui";
+import { Card, Field, inputCls, Masthead, PageBody } from "@/components/ui";
 import { PAGE_TYPES, PRIORITIES, STORY_POINTS } from "@/lib/types";
 
 export default async function NuevaPagina({ searchParams }: PageProps<"/paginas/nueva">) {
@@ -9,17 +9,16 @@ export default async function NuevaPagina({ searchParams }: PageProps<"/paginas/
   const defaultType = PAGE_TYPES.find((t) => t === tipo) ?? "Páginas Principales";
   return (
     <>
-      <nav aria-label="Ruta" className="mb-3 text-sm text-stone-600">
-        <Link href="/paginas" className="hover:text-stone-900 hover:underline">
-          Páginas
-        </Link>
-      </nav>
-      <div className="mt-2">
-        <PageHeader
-          title="Nueva página"
-          subtitle="Se crea con su trabajo principal y el checklist de QA de su tipo."
-        />
-      </div>
+      <Masthead
+        crumbs={
+          <Link href="/" className="hover:text-white hover:underline">
+            Páginas
+          </Link>
+        }
+        title="Nueva página"
+        meta="Se crea con su trabajo principal y el checklist de QA de su tipo."
+      />
+      <PageBody>
       <Card className="max-w-2xl">
         <form action={createPage} className="grid gap-4 sm:grid-cols-2">
           <Field label="Título" className="sm:col-span-2">
@@ -74,6 +73,7 @@ export default async function NuevaPagina({ searchParams }: PageProps<"/paginas/
           </div>
         </form>
       </Card>
+      </PageBody>
     </>
   );
 }

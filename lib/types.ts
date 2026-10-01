@@ -133,7 +133,6 @@ export interface Page {
   wpPageId?: number;
   publicUrl?: string;
   docsUrl?: string;
-  figmaUrl?: string;
   /** Problemas detectados al importar desde la hoja. */
   importWarnings: string[];
   works: WorkItem[];

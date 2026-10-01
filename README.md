@@ -5,6 +5,13 @@ Control de producción de páginas de welovepaving.com. El plan completo está e
 
 ## Estado: Fase 1 (edición, sin login)
 
+- **Inicio = Páginas:** la raíz `/` es la lista de páginas con la barra de flujo por
+  etapa (filtra al hacer clic), buscador (`/`) y "Nueva página" (`N`). `/paginas`
+  redirige ahí.
+- **Reinicio del 1 oct 2026:** las 25 páginas arrancan en "Por hacer", sin revisiones,
+  notas, ajustes ni actividad (almacén `pageops-v2`; el anterior, `pageops`, queda como
+  respaldo en Netlify Blobs).
+
 Todo se edita desde la app: páginas nuevas, datos de la página, etapas (selector o
 arrastrando en el Tablero), bloqueos, fechas, story points, ajustes, revisiones con
 feedback punto por punto (→ tarea, resuelto, descartado), tareas, QA y notas. Cada

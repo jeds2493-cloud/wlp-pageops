@@ -1,6 +1,6 @@
 import { connection } from "next/server";
 import { Board, type BoardCard } from "@/components/board";
-import { PageHeader } from "@/components/ui";
+import { Masthead, PageBody } from "@/components/ui";
 import { getPages, pendingFeedback, stageWarnings } from "@/lib/data";
 import { STAGES, type Stage } from "@/lib/types";
 
@@ -28,11 +28,18 @@ export default async function Tablero() {
 
   return (
     <>
-      <PageHeader
+      <Masthead
         title="Tablero"
-        subtitle="Arrastra una tarjeta para cambiar su etapa, o enfócala y usa Alt + ← / →. Cada tarjeta es un trabajo: la página V2 o un ajuste."
+        meta={
+          <>
+            Arrastra una tarjeta para cambiar su etapa, o enfócala y usa <kbd>Alt</kbd> + <kbd>←</kbd> <kbd>→</kbd>. Cada tarjeta es un
+            trabajo: la página V2 o un ajuste.
+          </>
+        }
       />
-      <Board columns={COLUMNS} cards={cards} />
+      <PageBody>
+        <Board columns={COLUMNS} cards={cards} />
+      </PageBody>
     </>
   );
 }

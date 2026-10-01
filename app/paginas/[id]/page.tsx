@@ -33,7 +33,7 @@ import {
   SubmitButton,
 } from "@/components/edit";
 import { Tabs } from "@/components/tabs";
-import { Badge, Card, Empty, ExternalLink, Field, inputCls, stageDot } from "@/components/ui";
+import { Badge, Card, Empty, ExternalLink, Field, inputCls, Masthead, PageBody, stageDot } from "@/components/ui";
 import {
   daysSince,
   editUrl,
@@ -347,41 +347,58 @@ export default async function PaginaDetalle({ params, searchParams }: PageProps<
 
   return (
     <>
-      <nav aria-label="Ruta" className="mb-3 flex items-center gap-1 text-sm text-stone-600">
-        <Link href="/paginas" className="hover:text-stone-900 hover:underline">
-          Páginas
-        </Link>
-        <ChevronRight aria-hidden className="size-4 text-stone-400" />
-        <Link href={`/paginas?tipo=${encodeURIComponent(page.type)}`} className="hover:text-stone-900 hover:underline">
-          {page.type}
-        </Link>
-      </nav>
-
-      <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
-        <div className="min-w-0">
-          <h1 className="font-display text-4xl leading-none font-extrabold text-balance text-stone-900 uppercase">{page.title}</h1>
-          <p className="mt-2 text-sm text-stone-600">
-            {page.wpPageId ? <span className="font-mono">WordPress #{page.wpPageId}</span> : "Sin ID de WordPress"}
+      <Masthead
+        crumbs={
+          <>
+            <Link href="/" className="hover:text-white hover:underline">
+              Páginas
+            </Link>
+            <ChevronRight aria-hidden className="size-4" />
+            <Link href={`/?tipo=${encodeURIComponent(page.type)}`} className="hover:text-white hover:underline">
+              {page.type}
+            </Link>
+          </>
+        }
+        title={page.title}
+        meta={
+          <>
+            {page.wpPageId ? <span className="font-mono">WP #{page.wpPageId}</span> : "Sin ID de WordPress"}
             {page.channel && ` · Canal ${page.channel}`}
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {preview && edit ? (
-            <>
-              <ExternalLink href={preview} primary>
-                Preview
+          </>
+        }
+        actions={
+          <>
+            {preview && edit ? (
+              <>
+                <ExternalLink href={preview} primary>
+                  Preview
+                </ExternalLink>
+                <ExternalLink href={edit} onDark>
+                  Editar en WP
+                </ExternalLink>
+              </>
+            ) : (
+              <AddLinkButton field="wp">ID de WordPress</AddLinkButton>
+            )}
+            {page.publicUrl ? (
+              <ExternalLink href={page.publicUrl} onDark>
+                Pública
               </ExternalLink>
-              <ExternalLink href={edit}>Editar en WP</ExternalLink>
-            </>
-          ) : (
-            <AddLinkButton field="wp">ID de WordPress</AddLinkButton>
-          )}
-          {page.publicUrl ? <ExternalLink href={page.publicUrl}>Pública</ExternalLink> : <AddLinkButton field="publicUrl">URL pública</AddLinkButton>}
-          {page.docsUrl ? <ExternalLink href={page.docsUrl}>Documentación</ExternalLink> : <AddLinkButton field="docsUrl">Documentación</AddLinkButton>}
-          {page.figmaUrl && <ExternalLink href={page.figmaUrl}>Figma</ExternalLink>}
-        </div>
-      </header>
+            ) : (
+              <AddLinkButton field="publicUrl">URL pública</AddLinkButton>
+            )}
+            {page.docsUrl ? (
+              <ExternalLink href={page.docsUrl} onDark>
+                Documentación
+              </ExternalLink>
+            ) : (
+              <AddLinkButton field="docsUrl">Documentación</AddLinkButton>
+            )}
+          </>
+        }
+      />
 
+      <PageBody>
       {page.importWarnings.length > 0 && (
         <div role="note" className="mb-5 flex flex-wrap items-start justify-between gap-3 rounded-wlp border border-wlp-yellow/70 bg-[#FDF3CF] px-5 py-3 text-sm text-[#6B4E00]">
           <ul className="space-y-0.5">
@@ -504,7 +521,7 @@ export default async function PaginaDetalle({ params, searchParams }: PageProps<
       <details id="config" className="group mt-8 rounded-wlp border border-stone-200 bg-white">
         <summary className="flex min-h-12 cursor-pointer items-center gap-2 px-5 text-sm font-semibold text-stone-800">
           <Settings2 aria-hidden className="size-4" /> Configuración de la página
-          <span className="font-normal text-stone-500">título, tipo, ID de WordPress y enlaces</span>
+          <span className="font-normal text-stone-500">título, tipo, ID de WordPress, URL y documentación</span>
         </summary>
         <div className="border-t border-stone-100 p-5">
           <PageConfigForm pageId={page.id}>
@@ -530,9 +547,6 @@ export default async function PaginaDetalle({ params, searchParams }: PageProps<
             <Field label="Documentación">
               <input id="cfg-docsUrl" name="docsUrl" type="url" defaultValue={page.docsUrl} className={inputCls} placeholder="Carpeta del reporte" />
             </Field>
-            <Field label="Figma">
-              <input id="cfg-figmaUrl" name="figmaUrl" type="url" defaultValue={page.figmaUrl} className={inputCls} placeholder="https://figma.com/…" />
-            </Field>
           </PageConfigForm>
           <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50/60 px-4 py-3">
             <p className="text-sm text-stone-700">Eliminar la página borra sus trabajos, revisiones, notas y actividad.</p>
@@ -546,6 +560,7 @@ export default async function PaginaDetalle({ params, searchParams }: PageProps<
           </div>
         </div>
       </details>
+      </PageBody>
     </>
   );
 }

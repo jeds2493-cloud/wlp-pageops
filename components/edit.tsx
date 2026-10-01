@@ -609,7 +609,7 @@ export function AddLinkButton({ field, children }: { field: string; children: Re
         input?.scrollIntoView({ behavior: "smooth", block: "center" });
         setTimeout(() => input?.focus(), 250);
       }}
-      className="inline-flex min-h-9 items-center gap-1 rounded-lg border border-dashed border-stone-400 px-3 text-sm font-medium text-stone-600 transition-colors hover:border-stone-900 hover:text-stone-900"
+      className="inline-flex min-h-9 items-center gap-1 rounded-lg border border-dashed border-stone-500 px-3 text-sm font-medium text-stone-300 transition-colors hover:border-wlp-yellow hover:text-wlp-yellow"
     >
       <Plus aria-hidden className="size-3.5" />
       {children}

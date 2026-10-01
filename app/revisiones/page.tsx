@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { connection } from "next/server";
-import { Badge, Card, Empty, PageHeader } from "@/components/ui";
+import { Badge, Card, Empty, Masthead, PageBody } from "@/components/ui";
 import { daysSince, formatDate, getPages, mainWork, pendingFeedback } from "@/lib/data";
 
 export default async function Revisiones() {
@@ -18,8 +18,8 @@ export default async function Revisiones() {
 
   return (
     <>
-      <PageHeader
-        title="Revisiones" subtitle="Lo que está esperando al Admin y lo que regresó con cambios" />
+      <Masthead title="Revisiones" meta="Lo que espera al Admin y lo que regresó con cambios." />
+      <PageBody>
       <div className="grid gap-4 lg:grid-cols-2">
         <Card title={`Esperando al Admin · ${waiting.length}`}>
           {waiting.length ? (
@@ -67,6 +67,7 @@ export default async function Revisiones() {
           )}
         </Card>
       </div>
+      </PageBody>
     </>
   );
 }
