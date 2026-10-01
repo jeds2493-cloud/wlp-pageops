@@ -75,7 +75,7 @@ export function TearTicket({ ticket, pageTitle }: { ticket: Ticket; pageTitle?: 
         }
       : {
           transform: `translate(${pull.x}px, ${pull.y * 0.35}px) rotate(${pull.x * 0.09}deg)`,
-          transition: phase === "dragging" ? "none" : "transform 380ms cubic-bezier(0.34, 1.56, 0.64, 1)",
+          transition: phase === "dragging" ? "none" : "transform 320ms cubic-bezier(0.25, 1, 0.5, 1)",
         };
   const torn = phase === "tearing" || phase === "gone";
 
