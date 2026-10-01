@@ -7,7 +7,7 @@ import { getStore } from "@netlify/blobs";
 import { seedPages } from "./seed";
 import { LEGACY_QA_LABELS, qaItems, WCAG_GROUP, WCAG_ITEMS } from "./templates";
 import type { QaItem } from "./types";
-import type { Page } from "./types";
+import type { Page, Ticket } from "./types";
 
 interface Backend {
   get<T>(key: string): Promise<T | undefined>;
@@ -238,4 +238,17 @@ export async function deletePage(id: string): Promise<void> {
     ids.filter((x) => x !== id),
   );
   await db().del(pageKey(id));
+}
+
+// ── Tickets ──────────────────────────────────────────────────────────────────
+// Lista general de tickets (abiertos y cerrados) en una sola clave.
+
+const TICKETS_KEY = "tickets";
+
+export async function loadTickets(): Promise<Ticket[]> {
+  return (await db().get<Ticket[]>(TICKETS_KEY)) ?? [];
+}
+
+export async function saveTickets(tickets: Ticket[]): Promise<void> {
+  await db().set(TICKETS_KEY, tickets);
 }

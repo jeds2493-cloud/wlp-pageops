@@ -102,3 +102,17 @@ kbd {
   line-height: 1;
   opacity: 0.75;
 }
+
+/* Boleto: borde dentado donde se rompe la perforación. */
+.torn-right {
+  --t: 7px;
+  mask:
+    conic-gradient(from -135deg at right, #0000, #000 1deg 89deg, #0000 90deg) right / var(--t) calc(2 * var(--t)) repeat-y,
+    linear-gradient(#000 0 0) left / calc(100% - var(--t)) 100% no-repeat;
+}
+.torn-left {
+  --t: 7px;
+  mask:
+    conic-gradient(from 45deg at left, #0000, #000 1deg 89deg, #0000 90deg) left / var(--t) calc(2 * var(--t)) repeat-y,
+    linear-gradient(#000 0 0) right / calc(100% - var(--t)) 100% no-repeat;
+}

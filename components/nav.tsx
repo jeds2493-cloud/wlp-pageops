@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Columns3, ListChecks, Rows3 } from "lucide-react";
+import { Columns3, ListChecks, Rows3, Ticket } from "lucide-react";
 
 const items = [
   { href: "/", label: "Páginas", icon: Rows3, match: (p: string) => p === "/" || p.startsWith("/paginas") },
   { href: "/tablero", label: "Tablero", icon: Columns3, match: (p: string) => p.startsWith("/tablero") },
   { href: "/revisiones", label: "Revisiones", icon: ListChecks, match: (p: string) => p.startsWith("/revisiones") },
+  { href: "/tickets", label: "Tickets", icon: Ticket, match: (p: string) => p.startsWith("/tickets") },
 ];
 
 export function Nav() {

@@ -8,7 +8,7 @@ import { revalidatePath } from "next/cache";
 import { requireAction } from "@/lib/auth";
 import { stageWarnings } from "@/lib/logic";
 import { slugify } from "@/lib/seed";
-import { deletePage as removePage, loadPage, loadPages, savePage } from "@/lib/store";
+import { deletePage as removePage, loadPage, loadPages, loadTickets, savePage, saveTickets } from "@/lib/store";
 import { qaCategory, qaItems, SUGGESTED_SP } from "@/lib/templates";
 import {
   NOTE_KINDS,
@@ -25,6 +25,7 @@ import {
   type QaStatus,
   type Stage,
   type TaskCategory,
+  type Ticket,
   type WorkItem,
 } from "@/lib/types";
 
@@ -520,5 +521,60 @@ export async function setWorkField(pageId: string, workId: string, field: WorkFi
       w[field] = value || undefined;
     }
     if (before !== w[field]) log(`${WORK_FIELDS[field]}: ${before ?? "—"} → ${w[field] ?? "—"}.`);
+  });
+}
+
+// ── Tickets ──────────────────────────────────────────────────────────────────
+
+async function mutateTickets(fn: (tickets: Ticket[], actor: Actor) => void) {
+  const tickets = await loadTickets();
+  fn(tickets, await currentActor());
+  await saveTickets(tickets);
+  revalidatePath("/", "layout");
+}
+
+export async function createTicket(fd: FormData) {
+  await requireAction();
+  const title = str(fd, "title");
+  if (!title) return;
+  await mutateTickets((tickets, actor) => {
+    tickets.push({
+      id: uid(),
+      number: tickets.reduce((n, t) => Math.max(n, t.number), 0) + 1,
+      title,
+      detail: optional(fd, "detail"),
+      priority: oneOf(PRIORITIES, str(fd, "priority"), "Normal") as Priority,
+      pageId: optional(fd, "pageId"),
+      createdAt: new Date().toISOString(),
+      createdBy: actor,
+    });
+  });
+}
+
+export async function closeTicket(id: string) {
+  await requireAction();
+  await mutateTickets((tickets, actor) => {
+    const t = tickets.find((x) => x.id === id);
+    if (!t || t.closedAt) return;
+    t.closedAt = new Date().toISOString();
+    t.closedBy = actor;
+  });
+}
+
+export async function reopenTicket(id: string) {
+  await requireAction();
+  await mutateTickets((tickets) => {
+    const t = tickets.find((x) => x.id === id);
+    if (!t) return;
+    t.closedAt = undefined;
+    t.closedBy = undefined;
+  });
+}
+
+export async function deleteTicket(id: string) {
+  await requireAction();
+  await mutateTickets((tickets) => {
+    const i = tickets.findIndex((x) => x.id === id);
+    if (i >= 0) tickets.splice(i, 1);
   });
 }

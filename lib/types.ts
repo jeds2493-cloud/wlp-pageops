@@ -148,3 +148,17 @@ export interface Page {
   notes: Note[];
   activity: ActivityEntry[];
 }
+
+export interface Ticket {
+  id: string;
+  number: number;
+  title: string;
+  detail?: string;
+  priority: Priority;
+  /** Página relacionada (opcional). */
+  pageId?: string;
+  createdAt: string;
+  createdBy: Actor;
+  closedAt?: string;
+  closedBy?: Actor;
+}

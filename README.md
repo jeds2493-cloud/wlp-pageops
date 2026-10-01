@@ -23,6 +23,13 @@ firma notas, feedback y actividad mientras no haya login.
 (`lib/seed.ts`). `/respaldo` descarga todo en JSON. El esquema de Supabase para
 cuando haya login sigue en `supabase/schema.sql`.
 
+## Tickets
+
+`/tickets` es una lista general de pendientes que no son de una sola página (se pueden
+ligar a una). Cada ticket es un boleto: se cierra jalando el talón hacia la derecha (o
+con clic / Enter en el talón) y pasa al historial, desde donde se puede reabrir. Se
+guardan en la clave `tickets` del mismo almacén.
+
 ## Acceso
 
 Mientras llega el login, la app pide una **contraseña compartida**. Se configura en
