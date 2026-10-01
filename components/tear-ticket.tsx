@@ -1,148 +1,558 @@
 "use client";
 
+// Adaptado de "Tear Ticket" de React Bits (reactbits.dev/micro/tear-ticket): geometría
+// de la perforación, fibras que se estiran y revientan, bisagra en la muesca y caída con
+// gravedad. Cambios para PageOps: sin inclinación ni tilt 3D, tamaño medido del propio
+// ticket (crece con el texto) en vez de ancho/alto fijos, y al cortarse cierra el ticket.
+
 import Link from "next/link";
-import { useRef, useState, useTransition, type PointerEvent } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { Scissors } from "lucide-react";
 import { closeTicket } from "@/app/actions";
 import { formatDateTime } from "@/lib/logic";
 import type { Ticket } from "@/lib/types";
 import { Badge } from "./ui";
 
-type Phase = "idle" | "dragging" | "tearing" | "gone";
+const GRAVITY = 2400;
+const RETRACT = 0.17;
+const STUB = 104; // ancho del talón
+const RADIUS = 14; // radio de las esquinas (rounded-wlp)
+const NOTCH = 9; // muescas arriba y abajo de la perforación
+const HOLE = 6; // diámetro de cada perforación
+const ROUGH = 0.6;
+const TEAR_ANGLE = 30;
+const STRETCH = 30;
+const RESISTANCE = 0.45;
+const FIBRE = "#d7d5d1"; // stone-300
+const EDGE = "#e3e2df"; // stone-200
 
-const TEAR_AT = 90; // px que hay que jalar el talón para cortarlo
-const MAX_PULL = 150;
+const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+const rad = (deg: number) => (deg * Math.PI) / 180;
+const wrap = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
+const noise = (seed: number) => {
+  let s = seed | 0;
+  return () => {
+    s = (s + 0x6d2b79f5) | 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+};
+const f = (n: number) => n.toFixed(2);
 
-function reducedMotion() {
-  return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+interface Bridge {
+  y0: number;
+  y1: number;
+  mid: number;
+  pts: [number, number][];
+  x: number;
+  y: number;
 }
 
-/**
- * Ticket como boleto: el talón (derecha) se jala para cortarlo por la perforación.
- * Al pasar el umbral se desprende, el ticket se cierra y pasa al historial.
- * También se corta con clic o con Enter/Espacio en el talón.
- */
+function buildGeometry(W: number, H: number) {
+  const R = RADIUS;
+  const notch = NOTCH;
+  const hole = HOLE;
+  const x = W - STUB;
+  const cross = H;
+  const hr = hole / 2;
+  const n = Math.max(1, Math.round((H - 2 * notch) / 14));
+  const span = cross - 2 * notch;
+  const bridge = Math.max(2, (span - n * hole) / (n + 1));
+  const random = noise(n * 7919 + Math.round(cross));
+  const pt = (u: number, v: number) => `${f(u)},${f(v)}`;
+  const arc = (r: number, sweep: number, u: number, v: number) => `A${f(r)},${f(r)} 0 0 ${sweep} ${pt(u, v)}`;
+  const bridges: Bridge[] = [];
+  for (let i = 0; i <= n; i += 1) {
+    const y0 = notch + i * (bridge + hole);
+    const y1 = y0 + bridge;
+    const steps = Math.max(2, Math.round(bridge / 2.2));
+    const pts: [number, number][] = [];
+    for (let k = 1; k < steps; k += 1) pts.push([x + (random() - 0.5) * 2 * ROUGH, y0 + (bridge * k) / steps]);
+    bridges.push({ y0, y1, mid: (y0 + y1) / 2, pts, x, y: (y0 + y1) / 2 });
+  }
+  let body = `M${pt(R, 0)}L${pt(x - notch, 0)}${arc(notch, 0, x, notch)}`;
+  bridges.forEach((b, i) => {
+    b.pts.forEach((p) => {
+      body += `L${pt(p[0], p[1])}`;
+    });
+    body += `L${pt(x, b.y1)}`;
+    if (i < n) body += arc(hr, 0, x, b.y1 + hole);
+  });
+  body += `${arc(notch, 0, x - notch, cross)}L${pt(R, cross)}${arc(R, 1, 0, cross - R)}L${pt(0, R)}${arc(R, 1, R, 0)}Z`;
+  let stub = `M${pt(x + notch, 0)}L${pt(W - R, 0)}${arc(R, 1, W, R)}L${pt(W, cross - R)}${arc(R, 1, W - R, cross)}L${pt(x + notch, cross)}${arc(notch, 0, x, cross - notch)}`;
+  for (let i = n; i >= 0; i -= 1) {
+    const b = bridges[i];
+    for (let k = b.pts.length - 1; k >= 0; k -= 1) stub += `L${pt(b.pts[k][0], b.pts[k][1])}`;
+    stub += `L${pt(x, b.y0)}`;
+    if (i > 0) stub += arc(hr, 0, x, b.y0 - hole);
+  }
+  stub += `${arc(notch, 0, x + notch, 0)}Z`;
+  const ends = [
+    { x, y: notch, v: notch },
+    { x, y: cross - notch, v: cross - notch },
+  ];
+  const bodyOutline = `M${pt(x, cross - notch)}${arc(notch, 0, x - notch, cross)}L${pt(R, cross)}${arc(R, 1, 0, cross - R)}L${pt(0, R)}${arc(R, 1, R, 0)}L${pt(x - notch, 0)}${arc(notch, 0, x, notch)}`;
+  return { cross, body, stub, bridges, ends, bodyOutline };
+}
+
+type Phase = "idle" | "held" | "free" | "drop" | "return";
+
+interface Sim {
+  raf: number;
+  last: number;
+  phase: Phase;
+  id: number | null;
+  sign: number;
+  hinge: { x: number; y: number };
+  hingeV: number;
+  grab: { x: number; y: number };
+  start: { x: number; y: number };
+  point: { x: number; y: number };
+  a0: number;
+  theta: number;
+  thetaV: number;
+  sx: number;
+  sy: number;
+  vx: number;
+  vy: number;
+  spin: number;
+  pvx: number;
+  pvy: number;
+  pt: number;
+  fade: number;
+  age: number;
+  bx: number;
+  bv: number;
+  snapped: boolean[];
+  snapAt: number[];
+  span: number[];
+}
+
+const freshSim = (): Sim => ({
+  raf: 0,
+  last: 0,
+  phase: "idle",
+  id: null,
+  sign: 1,
+  hinge: { x: 0, y: 0 },
+  hingeV: 0,
+  grab: { x: 0, y: 0 },
+  start: { x: 0, y: 0 },
+  point: { x: 0, y: 0 },
+  a0: 0,
+  theta: 0,
+  thetaV: 0,
+  sx: 0,
+  sy: 0,
+  vx: 0,
+  vy: 0,
+  spin: 0,
+  pvx: 0,
+  pvy: 0,
+  pt: 0,
+  fade: 1,
+  age: 0,
+  bx: 0,
+  bv: 0,
+  snapped: [],
+  snapAt: [],
+  span: [],
+});
+
+const prefersReducedMotion = () =>
+  typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
 export function TearTicket({ ticket, pageTitle }: { ticket: Ticket; pageTitle?: string }) {
-  const [phase, setPhase] = useState<Phase>("idle");
-  const [pull, setPull] = useState({ x: 0, y: 0 });
-  const [, start] = useTransition();
-  const origin = useRef<{ x: number; y: number } | null>(null);
-  const moved = useRef(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const stubRef = useRef<HTMLDivElement>(null);
+  const fibres = useRef<(SVGPathElement | null)[]>([]);
+  const sim = useRef<Sim>(freshSim());
+  const [size, setSize] = useState({ w: 0, h: 0 });
+  const [grabbing, setGrabbing] = useState(false);
+  const [gone, setGone] = useState(false);
+  const closing = useRef(false);
 
-  const tear = () => {
-    if (phase === "tearing" || phase === "gone") return;
-    const finish = () => start(() => closeTicket(ticket.id));
-    if (reducedMotion()) {
-      setPhase("gone");
-      finish();
-      return;
+  // El ticket se mide a sí mismo: la geometría sigue al texto (no hay alto fijo).
+  useLayoutEffect(() => {
+    const el = rootRef.current;
+    if (!el) return;
+    const measure = () => setSize({ w: el.offsetWidth, h: el.offsetHeight });
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const geo = useMemo(() => (size.w > STUB + 40 && size.h > 2 * NOTCH + 10 ? buildGeometry(size.w, size.h) : null), [size]);
+  const geoRef = useRef(geo);
+  useEffect(() => {
+    geoRef.current = geo;
+  }, [geo]);
+
+  const finish = useCallback(() => {
+    if (closing.current) return;
+    closing.current = true;
+    if (stubRef.current) stubRef.current.style.visibility = "hidden";
+    setGone(true);
+    setTimeout(() => void closeTicket(ticket.id), 280);
+  }, [ticket.id]);
+
+  const paint = useCallback((now: number) => {
+    const s = sim.current;
+    const g = geoRef.current;
+    if (!g) return false;
+    if (stubRef.current) {
+      stubRef.current.style.transform = `translate(${s.sx.toFixed(2)}px, ${s.sy.toFixed(2)}px) rotate(${((s.theta * s.sign * 180) / Math.PI).toFixed(3)}deg)`;
+      stubRef.current.style.opacity = s.fade.toFixed(3);
     }
-    setPhase("tearing");
-    // El talón cae; luego el resto del boleto se desvanece y el ticket se cierra.
-    setTimeout(() => setPhase("gone"), 520);
-    setTimeout(finish, 820);
-  };
-
-  const onDown = (e: PointerEvent<HTMLButtonElement>) => {
-    if (phase !== "idle") return;
-    e.currentTarget.setPointerCapture(e.pointerId);
-    origin.current = { x: e.clientX, y: e.clientY };
-    moved.current = false;
-    setPhase("dragging");
-  };
-  const onMove = (e: PointerEvent<HTMLButtonElement>) => {
-    if (phase !== "dragging" || !origin.current) return;
-    const x = Math.max(0, Math.min(MAX_PULL, e.clientX - origin.current.x));
-    const y = Math.max(-40, Math.min(40, e.clientY - origin.current.y));
-    if (x > 4) moved.current = true;
-    setPull({ x, y });
-  };
-  const onUp = () => {
-    if (phase !== "dragging") return;
-    origin.current = null;
-    if (pull.x >= TEAR_AT) return tear();
-    setPhase("idle");
-    setPull({ x: 0, y: 0 });
-  };
-
-  const progress = Math.min(1, pull.x / TEAR_AT);
-  const stubStyle =
-    phase === "tearing" || phase === "gone"
-      ? {
-          transform: `translate(${pull.x + 140}px, ${pull.y + 260}px) rotate(38deg)`,
-          opacity: 0,
-          transition: "transform 560ms cubic-bezier(0.55, 0, 0.75, 0.2), opacity 460ms ease-in 100ms",
+    if (bodyRef.current) bodyRef.current.style.transform = `translateX(${s.bx.toFixed(2)}px)`;
+    const cos = Math.cos(s.theta * s.sign);
+    const sin = Math.sin(s.theta * s.sign);
+    const ly = 1.6;
+    let busy = false;
+    g.bridges.forEach((b, i) => {
+      const dx = b.x - s.hinge.x;
+      const dy = b.y - s.hinge.y;
+      const tx = s.hinge.x + dx * cos - dy * sin + s.sx;
+      const ty = s.hinge.y + dx * sin + dy * cos + s.sy;
+      const ox = b.x + s.bx;
+      const oy = b.y;
+      const gx = tx - ox;
+      const gy = ty - oy;
+      const gap = Math.hypot(gx, gy);
+      const near = fibres.current[i * 2];
+      const far = fibres.current[i * 2 + 1];
+      if (!near || !far) return;
+      const live = s.phase !== "idle";
+      if (!s.snapped[i]) {
+        if (!live || gap < 0.35) {
+          near.style.opacity = "0";
+          far.style.opacity = "0";
+          return;
         }
-      : {
-          transform: `translate(${pull.x}px, ${pull.y * 0.35}px) rotate(${pull.x * 0.09}deg)`,
-          transition: phase === "dragging" ? "none" : "transform 320ms cubic-bezier(0.25, 1, 0.5, 1)",
-        };
-  const torn = phase === "tearing" || phase === "gone";
+        const k = clamp(gap / STRETCH, 0, 1);
+        const sag = gap * 0.18;
+        const w = (1.7 - 1.15 * k).toFixed(2);
+        const sx = gx / 2;
+        const sy = sag + gy / 2;
+        near.setAttribute("d", `M${f(ox)},${f(oy - ly)}Q${f(ox + sx)},${f(oy - ly + sy)} ${f(tx)},${f(ty - ly)}`);
+        far.setAttribute("d", `M${f(ox)},${f(oy + ly)}Q${f(ox + gx - sx)},${f(oy + ly + gy - sy)} ${f(tx)},${f(ty + ly)}`);
+        near.style.strokeWidth = w;
+        far.style.strokeWidth = w;
+        near.style.opacity = "1";
+        far.style.opacity = "1";
+        s.span[i] = gap;
+        return;
+      }
+      const t = (now - s.snapAt[i]) / 1000 / RETRACT;
+      if (!live || t >= 1 || !s.snapAt[i]) {
+        near.style.opacity = "0";
+        far.style.opacity = "0";
+        return;
+      }
+      busy = true;
+      const left = (1 - t) * (1 - t);
+      const len = (s.span[i] || STRETCH) * 0.5 * left;
+      const ux = gap > 0.01 ? gx / gap : 1;
+      const uy = gap > 0.01 ? gy / gap : 0;
+      near.setAttribute("d", `M${f(ox)},${f(oy)}L${f(ox + ux * len)},${f(oy + uy * len)}`);
+      far.setAttribute("d", `M${f(tx)},${f(ty)}L${f(tx - ux * len)},${f(ty - uy * len)}`);
+      near.style.strokeWidth = "0.9";
+      far.style.strokeWidth = "0.9";
+      near.style.opacity = left.toFixed(2);
+      far.style.opacity = left.toFixed(2);
+    });
+    return busy;
+  }, []);
+
+  const step = useCallback(
+    function tick(now: number) {
+      const s = sim.current;
+      const g = geoRef.current;
+      if (!g) return;
+      const dt = clamp((now - s.last) / 1000, 0.001, 0.034);
+      s.last = now;
+      const limit = rad(TEAR_ANGLE);
+      if (s.phase === "held") {
+        const count = g.bridges.length;
+        let intact = 0;
+        for (let i = 0; i < count; i += 1) if (!s.snapped[i]) intact += 1;
+        const hold = count ? intact / count : 0;
+        const follow = 0.92 * (1 - clamp(RESISTANCE, 0, 0.95) * hold);
+        const a = Math.atan2(s.point.y - s.hinge.y, s.point.x - s.hinge.x);
+        const want = clamp(wrap(a - s.a0) * s.sign * follow, 0, limit + 0.1);
+        s.theta += (want - s.theta) * (1 - Math.exp(-dt / 0.035));
+        const away = clamp((s.point.x - s.start.x || 0) * 0.05, -2, 4);
+        const side = clamp((s.point.y - s.start.y || 0) * 0.05, -3, 3);
+        s.sx += (away - s.sx) * (1 - Math.exp(-dt / 0.05));
+        s.sy += (side - s.sy) * (1 - Math.exp(-dt / 0.05));
+        const slack = Math.hypot(s.sx, s.sy);
+        let left = 0;
+        g.bridges.forEach((b, i) => {
+          if (s.snapped[i]) return;
+          const d = Math.abs(b.mid - s.hingeV);
+          if (2 * d * Math.sin(s.theta / 2) + slack > STRETCH || s.theta >= limit) {
+            s.snapped[i] = true;
+            s.snapAt[i] = now;
+            s.bv -= 560 / g.bridges.length;
+          } else left += 1;
+        });
+        if (left === 0) {
+          s.phase = "free";
+          s.bv -= 150;
+        }
+      } else if (s.phase === "free") {
+        const cos = Math.cos(s.theta * s.sign);
+        const sin = Math.sin(s.theta * s.sign);
+        const gx = s.grab.x - s.hinge.x;
+        const gy = s.grab.y - s.hinge.y;
+        const wx = s.point.x - s.hinge.x - (gx * cos - gy * sin);
+        const wy = s.point.y - s.hinge.y - (gx * sin + gy * cos);
+        s.sx += (wx - s.sx) * (1 - Math.exp(-dt / 0.045));
+        s.sy += (wy - s.sy) * (1 - Math.exp(-dt / 0.045));
+        const hang = limit * 0.55 + clamp(s.pvx * 0.0009 * s.sign, -0.3, 0.3);
+        s.theta += (hang - s.theta) * (1 - Math.exp(-dt / 0.12));
+      } else if (s.phase === "drop") {
+        s.age += dt;
+        s.vy += GRAVITY * dt;
+        s.sx += s.vx * dt;
+        s.sy += s.vy * dt;
+        s.theta += s.spin * dt;
+        if (s.age > 0.16) s.fade = clamp(1 - (s.age - 0.16) / 0.42, 0, 1);
+        if (s.fade <= 0) {
+          s.phase = "idle";
+          finish();
+        }
+      } else if (s.phase === "return") {
+        s.thetaV += (-300 * s.theta - 24 * s.thetaV) * dt;
+        s.theta += s.thetaV * dt;
+        s.sx += (0 - s.sx) * (1 - Math.exp(-dt / 0.07));
+        s.sy += (0 - s.sy) * (1 - Math.exp(-dt / 0.07));
+        if (Math.abs(s.theta) < 0.0008 && Math.abs(s.thetaV) < 0.01 && Math.hypot(s.sx, s.sy) < 0.05) {
+          Object.assign(s, { theta: 0, thetaV: 0, sx: 0, sy: 0, phase: "idle" as Phase });
+          s.snapped = [];
+          s.snapAt = [];
+        }
+      }
+      s.bv += (-520 * s.bx - 30 * s.bv) * dt;
+      s.bx += s.bv * dt;
+      const busy = paint(now);
+      const moving = Math.abs(s.bx) > 0.02 || Math.abs(s.bv) > 0.5;
+      if (s.phase !== "idle" || moving || busy) s.raf = requestAnimationFrame(tick);
+      else {
+        s.bx = 0;
+        s.bv = 0;
+        paint(now);
+        s.raf = 0;
+      }
+    },
+    [finish, paint],
+  );
+
+  const run = () => {
+    const s = sim.current;
+    if (s.raf) return;
+    s.last = performance.now();
+    s.raf = requestAnimationFrame(step);
+  };
+
+  useEffect(() => {
+    const s = sim.current;
+    return () => cancelAnimationFrame(s.raf);
+  }, []);
+
+  const local = (e: PointerEvent) => {
+    const r = rootRef.current!.getBoundingClientRect();
+    return { x: e.clientX - r.left, y: e.clientY - r.top };
+  };
+
+  /** Teclado o clic sin arrastre: el talón se suelta solo y cae. */
+  const dropNow = () => {
+    const g = geoRef.current;
+    if (!g || closing.current) return;
+    if (prefersReducedMotion()) return finish();
+    const s = sim.current;
+    s.sign = 1;
+    s.hinge = { x: g.ends[1].x, y: g.ends[1].y };
+    s.hingeV = g.ends[1].v;
+    if (stubRef.current) stubRef.current.style.transformOrigin = `${s.hinge.x}px ${s.hinge.y}px`;
+    s.snapped = g.bridges.map(() => true);
+    s.snapAt = g.bridges.map(() => performance.now());
+    Object.assign(s, { phase: "drop" as Phase, vx: 260, vy: -380, spin: 2.4, age: 0, bv: -420 });
+    run();
+  };
+
+  const onDown = (e: PointerEvent<HTMLDivElement>) => {
+    const s = sim.current;
+    const g = geoRef.current;
+    if (!g || closing.current || e.button !== 0 || s.id !== null || s.phase === "drop") return;
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {}
+    const p = local(e);
+    Object.assign(s, { id: e.pointerId, start: p, point: p, pt: performance.now(), pvx: 0, pvy: 0 });
+    if (s.theta < 0.01) {
+      const far = p.y < g.cross / 2;
+      const end = g.ends[far ? 1 : 0];
+      s.sign = far ? 1 : -1;
+      s.hinge = { x: end.x, y: end.y };
+      s.hingeV = end.v;
+      if (stubRef.current) stubRef.current.style.transformOrigin = `${s.hinge.x}px ${s.hinge.y}px`;
+    }
+    const cos = Math.cos(-s.theta * s.sign);
+    const sin = Math.sin(-s.theta * s.sign);
+    const ux = p.x - s.sx - s.hinge.x;
+    const uy = p.y - s.sy - s.hinge.y;
+    s.grab = { x: s.hinge.x + ux * cos - uy * sin, y: s.hinge.y + ux * sin + uy * cos };
+    s.a0 = Math.atan2(s.grab.y - s.hinge.y, s.grab.x - s.hinge.x) - (s.theta * s.sign) / 0.92;
+    s.phase = "held";
+    s.thetaV = 0;
+    setGrabbing(true);
+    run();
+  };
+
+  const onMove = (e: PointerEvent<HTMLDivElement>) => {
+    const s = sim.current;
+    if (s.id !== e.pointerId) return;
+    const p = local(e);
+    const now = performance.now();
+    const dt = Math.max(0.004, (now - s.pt) / 1000);
+    s.pvx += ((p.x - s.point.x) / dt - s.pvx) * 0.35;
+    s.pvy += ((p.y - s.point.y) / dt - s.pvy) * 0.35;
+    s.pt = now;
+    s.point = p;
+    if (prefersReducedMotion() && Math.hypot(p.x - s.start.x, p.y - s.start.y) > 28) {
+      s.id = null;
+      setGrabbing(false);
+      finish();
+    }
+  };
+
+  const onUp = (e: PointerEvent<HTMLDivElement>) => {
+    const s = sim.current;
+    if (s.id !== e.pointerId) return;
+    s.id = null;
+    try {
+      if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {}
+    setGrabbing(false);
+    const dist = Math.hypot(s.point.x - s.start.x, s.point.y - s.start.y);
+    if (s.phase === "free") {
+      const still = performance.now() - s.pt > 80;
+      s.vx = still ? 0 : clamp(s.pvx, -1600, 1600);
+      s.vy = still ? 0 : clamp(s.pvy, -1600, 1200);
+      s.spin = clamp(s.vx * 0.004, -6, 6) + 1.2 * s.sign;
+      s.age = 0;
+      s.phase = "drop";
+    } else if (s.phase === "held") {
+      // Un clic sin arrastre también corta; un jalón corto regresa.
+      if (dist < 4) return dropNow();
+      s.phase = "return";
+    }
+    run();
+  };
+
+  const onKey = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    e.preventDefault();
+    if (!e.repeat) dropNow();
+  };
+
+  const number = `#${String(ticket.number).padStart(3, "0")}`;
 
   return (
     <li
-      // Al jalar y al caer, el talón pasa por encima de los tickets vecinos.
-      className={`relative list-none transition-[opacity,transform] duration-300 ease-out ${phase === "idle" ? "" : "z-20"}`}
-      style={phase === "gone" ? { opacity: 0, transform: "scale(0.96)" } : undefined}
+      className={`relative list-none transition-[opacity,transform] duration-300 ease-out ${grabbing ? "z-20" : ""}`}
+      style={gone ? { opacity: 0, transform: "scale(0.97)" } : undefined}
     >
-      <article aria-label={`Ticket #${ticket.number}: ${ticket.title}`} className="relative flex min-h-36">
-        {/* Cuerpo del boleto */}
-        <div className={`relative flex min-w-0 flex-1 flex-col rounded-l-wlp border border-r-0 border-stone-200 bg-white p-5 ${torn ? "torn-right" : ""}`}>
-          <div className="mb-2 flex items-center gap-2">
-            <span className="font-mono text-xs font-semibold text-stone-500">#{String(ticket.number).padStart(3, "0")}</span>
-            {ticket.priority !== "Normal" && <Badge tone={ticket.priority === "Urgente" || ticket.priority === "Alta" ? "warn" : "neutral"}>{ticket.priority}</Badge>}
+      <div ref={rootRef} className="relative select-none" style={{ WebkitTapHighlightColor: "transparent" }}>
+        {/* Cuerpo: en el flujo normal, así crece con el detalle */}
+        <div ref={bodyRef} className="relative will-change-transform">
+          {geo && (
+            <svg aria-hidden className="pointer-events-none absolute inset-0 z-10 size-full overflow-visible" viewBox={`0 0 ${size.w} ${size.h}`}>
+              <path d={geo.bodyOutline} fill="none" stroke={EDGE} strokeWidth={1} />
+            </svg>
+          )}
+          <article
+            aria-label={`Ticket ${number}: ${ticket.title}`}
+            className="flex min-h-36 flex-col bg-white p-5 select-text"
+            style={{ paddingRight: STUB + 20, clipPath: geo ? `path('${geo.body}')` : undefined, borderRadius: geo ? undefined : RADIUS }}
+          >
+            <div className="mb-2 flex items-center gap-2">
+              <span className="font-mono text-xs font-semibold text-stone-500">{number}</span>
+              {ticket.priority !== "Normal" && (
+                <Badge tone={ticket.priority === "Urgente" || ticket.priority === "Alta" ? "warn" : "neutral"}>{ticket.priority}</Badge>
+              )}
+            </div>
+            <h3 className="text-base leading-snug font-semibold text-balance text-stone-900">{ticket.title}</h3>
+            {ticket.detail && <p className="mt-1 text-sm whitespace-pre-line text-stone-600">{ticket.detail}</p>}
+            <p className="mt-auto pt-3 text-xs text-stone-500">
+              {ticket.createdBy} · {formatDateTime(ticket.createdAt)}
+              {ticket.pageId && pageTitle && (
+                <>
+                  {" · "}
+                  <Link href={`/paginas/${ticket.pageId}`} className="font-medium text-stone-700 underline-offset-2 hover:underline">
+                    {pageTitle}
+                  </Link>
+                </>
+              )}
+            </p>
+          </article>
+        </div>
+
+        {/* Fibras de la perforación */}
+        <svg aria-hidden className="pointer-events-none absolute inset-0 z-20 size-full overflow-visible">
+          {geo?.bridges.map((_, i) => (
+            <g key={i} fill="none" stroke={FIBRE} strokeLinecap="round">
+              <path
+                ref={(el) => {
+                  fibres.current[i * 2] = el;
+                }}
+                style={{ opacity: 0 }}
+              />
+              <path
+                ref={(el) => {
+                  fibres.current[i * 2 + 1] = el;
+                }}
+                style={{ opacity: 0 }}
+              />
+            </g>
+          ))}
+        </svg>
+
+        {/* Talón: se jala para cortarlo */}
+        {geo && (
+          <div
+            ref={stubRef}
+            role="button"
+            tabIndex={0}
+            aria-label={`Cortar el talón para cerrar el ticket ${number}`}
+            title="Jala el talón para cortarlo (o haz clic) y cerrar el ticket"
+            onPointerDown={onDown}
+            onPointerMove={onMove}
+            onPointerUp={onUp}
+            onPointerCancel={onUp}
+            onLostPointerCapture={onUp}
+            onKeyDown={onKey}
+            onDragStart={(e) => e.preventDefault()}
+            className={`group absolute inset-0 z-30 touch-none outline-none will-change-transform ${grabbing ? "cursor-grabbing" : "cursor-grab"}`}
+            style={{ clipPath: `path('${geo.stub}')` }}
+          >
+            <div
+              className="absolute inset-y-0 right-0 flex flex-col items-center justify-center gap-2 bg-wlp-dark text-wlp-yellow group-focus-visible:bg-stone-800"
+              style={{ width: STUB }}
+            >
+              <span className="font-mono text-lg font-semibold">{number}</span>
+              <span className="flex items-center gap-1 text-xs font-semibold text-stone-300 group-hover:text-white group-focus-visible:text-white">
+                <Scissors aria-hidden className="size-3.5" /> Cortar
+              </span>
+              <span aria-hidden className="absolute inset-x-4 bottom-3 hidden h-0.5 rounded-full bg-wlp-yellow group-focus-visible:block" />
+            </div>
           </div>
-          <h3 className="text-base leading-snug font-semibold text-balance text-stone-900">{ticket.title}</h3>
-          {ticket.detail && <p className="mt-1 line-clamp-3 text-sm text-stone-600">{ticket.detail}</p>}
-          <p className="mt-auto pt-3 text-xs text-stone-500">
-            {ticket.createdBy} · {formatDateTime(ticket.createdAt)}
-            {ticket.pageId && pageTitle && (
-              <>
-                {" · "}
-                <Link href={`/paginas/${ticket.pageId}`} className="font-medium text-stone-700 underline-offset-2 hover:underline">
-                  {pageTitle}
-                </Link>
-              </>
-            )}
-          </p>
-        </div>
-
-        {/* Perforación con las muescas del boleto */}
-        <div aria-hidden className="relative w-0">
-          <span className="absolute -top-px -left-2.5 size-5 -translate-y-1/2 rounded-full border border-stone-200 bg-stone-50" />
-          <span className="absolute -bottom-px -left-2.5 size-5 translate-y-1/2 rounded-full border border-stone-200 bg-stone-50" />
-          <span
-            className="absolute inset-y-3 left-0 border-l-2 border-dashed transition-colors"
-            style={{ borderColor: progress > 0.6 ? "var(--color-wlp-red)" : "var(--color-stone-300)" }}
-          />
-        </div>
-
-        {/* Talón: se jala para cortar */}
-        <button
-          type="button"
-          aria-label={`Cortar el talón para cerrar el ticket #${ticket.number}`}
-          title="Jala el talón hacia la derecha (o haz clic) para cerrar"
-          onPointerDown={onDown}
-          onPointerMove={onMove}
-          onPointerUp={onUp}
-          onPointerCancel={onUp}
-          onClick={() => {
-            // Un clic sin arrastre también corta (y Enter/Espacio desde el teclado).
-            if (!moved.current && phase === "idle") tear();
-            moved.current = false;
-          }}
-          style={stubStyle}
-          className={`group relative flex w-24 shrink-0 cursor-grab touch-none flex-col items-center justify-center gap-2 rounded-r-wlp bg-wlp-dark px-2 text-wlp-yellow select-none origin-left active:cursor-grabbing ${torn ? "torn-left" : ""}`}
-        >
-          <span className="font-mono text-lg font-semibold">#{String(ticket.number).padStart(3, "0")}</span>
-          <span className="flex items-center gap-1 text-xs font-semibold text-stone-300 group-hover:text-white">
-            <Scissors aria-hidden className="size-3.5" /> Cortar
-          </span>
-          <span aria-hidden className="absolute inset-x-3 bottom-3 h-1 overflow-hidden rounded-full bg-wlp-dark-2">
-            <span className="block h-full bg-wlp-yellow" style={{ width: `${progress * 100}%` }} />
-          </span>
-        </button>
-      </article>
+        )}
+      </div>
     </li>
   );
 }
