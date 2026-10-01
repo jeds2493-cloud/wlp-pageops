@@ -15,7 +15,8 @@ export default function ErrorScreen({ error, reset }: { error: Error & { digest?
           <AlertTriangle aria-hidden className="size-6 text-wlp-red" /> Algo falló
         </h1>
         <p className="mt-3 text-sm text-stone-700">
-          No se pudo cargar esta pantalla. Vuelve a intentar; si sigue fallando, comparte este código con soporte.
+          No se pudo cargar esta pantalla. Vuelve a intentar. Si sigue fallando, el motivo real está en Netlify:
+          <strong> Logs → Functions</strong>, en el error más reciente con este código (Next oculta el mensaje aquí por seguridad).
         </p>
         <p className="mt-3 rounded-lg bg-stone-100 px-3 py-2 font-mono text-xs text-stone-700">
           {error.digest ? `Código: ${error.digest}` : error.message}

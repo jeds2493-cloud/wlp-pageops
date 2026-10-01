@@ -5,6 +5,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { getStore } from "@netlify/blobs";
 import { seedPages } from "./seed";
+import { LEGACY_QA_LABELS, qaItems } from "./templates";
 import type { Page } from "./types";
 
 interface Backend {
@@ -78,6 +79,62 @@ function db(): Backend {
   return backend;
 }
 
+// ── Migraciones ─────────────────────────────────────────────────────────────
+// Antes de cambiar datos guardados se escribe un respaldo completo en el almacén
+// (backups/<nombre>), una sola vez por migración. Se descarga en /respaldo?copia=<nombre>.
+
+export const SCHEMA = 2;
+const BACKUP_PREFIX = "backups/";
+
+/** Formato 1 → 2: QA con Pasa / No pasa / No aplica y checklist de reglas WLP;
+ *  "Entregada el" en páginas publicadas que no la tenían. */
+function migrate(p: Page): Page {
+  const now = new Date().toISOString();
+  for (const w of p.works) {
+    const legacy = w.qa as { status: string }[];
+    const untouched = w.qa.length > 0 && legacy.every((q) => q.status === "Pendiente");
+    if (untouched && w.qa.some((q) => LEGACY_QA_LABELS.includes(q.label))) {
+      w.qa = qaItems(p.type, `${w.id}-v2`);
+    } else {
+      for (const q of w.qa as { status: string; reason?: string }[]) {
+        if (q.status === "OK") q.status = "Pasa";
+        if (q.status === "N/A") {
+          q.status = "No aplica";
+          q.reason ??= "Marcado como N/A antes del nuevo QA";
+        }
+      }
+    }
+    if (w.stage === "Publicado" && !w.deliveredAt && w.stageSince) {
+      w.deliveredAt = w.stageSince.slice(0, 10);
+      p.activity.unshift({
+        id: `${w.id}-mig2`,
+        at: now,
+        text: `"Entregada el" completada con la fecha en que pasó a Publicado (${w.deliveredAt}).`,
+      });
+    }
+  }
+  p.schema = SCHEMA;
+  return p;
+}
+
+async function backupOnce(name: string, pages: Page[]): Promise<void> {
+  const key = `${BACKUP_PREFIX}${name}`;
+  if (await db().get(key)) return;
+  await db().set(key, { createdAt: new Date().toISOString(), pages });
+}
+
+export async function loadBackup(name: string): Promise<unknown> {
+  return /^[\w.-]+$/.test(name) ? db().get(`${BACKUP_PREFIX}${name}`) : undefined;
+}
+
+async function upgrade(pages: Page[]): Promise<Page[]> {
+  const stale = pages.filter((p) => (p.schema ?? 1) < SCHEMA);
+  if (!stale.length) return pages;
+  await backupOnce(`antes-schema-${SCHEMA}`, structuredClone(pages));
+  await Promise.all(stale.map((p) => db().set(pageKey(p.id), migrate(p))));
+  return pages;
+}
+
 let seeding: Promise<string[]> | undefined;
 
 async function index(): Promise<string[]> {
@@ -88,7 +145,7 @@ async function index(): Promise<string[]> {
   seeding ??= (async () => {
     // En paralelo: en Netlify cada escritura es una petición de red, y en fila
     // la primera carga podía pasar el límite de tiempo de la función.
-    await Promise.all(seedPages.map((p) => db().set(pageKey(p.id), p)));
+    await Promise.all(seedPages.map((p) => db().set(pageKey(p.id), { ...p, schema: SCHEMA })));
     const seeded = seedPages.map((p) => p.id);
     await db().set(INDEX_KEY, seeded);
     return seeded;
@@ -101,17 +158,20 @@ async function index(): Promise<string[]> {
 export async function loadPages(): Promise<Page[]> {
   const ids = await index();
   const pages = await Promise.all(ids.map((id) => db().get<Page>(pageKey(id))));
-  return pages.filter((p): p is Page => Boolean(p));
+  return upgrade(pages.filter((p): p is Page => Boolean(p)));
 }
 
 export async function loadPage(id: string): Promise<Page | undefined> {
   const ids = await index();
-  return ids.includes(id) ? db().get<Page>(pageKey(id)) : undefined;
+  if (!ids.includes(id)) return undefined;
+  const page = await db().get<Page>(pageKey(id));
+  if (!page || (page.schema ?? 1) >= SCHEMA) return page;
+  return (await upgrade(await loadPages())).find((p) => p.id === id);
 }
 
 export async function savePage(page: Page): Promise<void> {
   const ids = await index();
-  await db().set(pageKey(page.id), page);
+  await db().set(pageKey(page.id), { ...page, schema: SCHEMA });
   if (!ids.includes(page.id)) await db().set(INDEX_KEY, [...ids, page.id]);
 }
 

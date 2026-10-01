@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { requirePage } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { cookies } from "next/headers";
@@ -27,7 +28,7 @@ import {
   InlineField,
   NoteComposer,
   PageConfigForm,
-  QaToggle,
+  QaRow,
   StageCTA,
   StageStepper,
   SubmitButton,
@@ -175,6 +176,7 @@ function TasksTab({ page, w }: { page: Page; w: WorkItem }) {
               <span className={`min-w-40 flex-1 text-sm ${t.done ? "text-stone-500 line-through" : "text-stone-900"}`}>{t.title}</span>
               {t.critical && <Badge tone="warn">Crítica</Badge>}
               {t.feedbackId && <Badge tone="info">Feedback</Badge>}
+              {t.qaId && <Badge tone="info">QA</Badge>}
               <Badge>{t.category}</Badge>
               <ActionButton
                 action={deleteTask.bind(null, page.id, w.id, t.id)}
@@ -211,7 +213,7 @@ function TasksTab({ page, w }: { page: Page; w: WorkItem }) {
 }
 
 function QaTab({ page, w }: { page: Page; w: WorkItem }) {
-  const { done, total } = qaProgress(w);
+  const { done, total, failing, pending } = qaProgress(w);
   if (!total) {
     return (
       <div className="rounded-wlp border border-dashed border-stone-300 px-5 py-6 text-center">
@@ -223,22 +225,34 @@ function QaTab({ page, w }: { page: Page; w: WorkItem }) {
     );
   }
   const groups = [...new Set(w.qa.map((q) => q.group))];
+  const openTasks = new Set(w.tasks.filter((t) => !t.done).map((t) => t.id));
   return (
     <div>
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <div
             role="progressbar"
-            aria-label="QA revisado"
+            aria-label="QA aprobado"
             aria-valuenow={done}
             aria-valuemin={0}
             aria-valuemax={total}
-            className="h-2 w-40 overflow-hidden rounded-full bg-stone-200"
+            className="flex h-2 w-40 overflow-hidden rounded-full bg-stone-200"
           >
-            <div className="h-full bg-wlp-yellow transition-[width]" style={{ width: `${(done / total) * 100}%` }} />
+            <div className="h-full bg-emerald-600" style={{ width: `${(done / total) * 100}%` }} />
+            <div className="h-full bg-wlp-red" style={{ width: `${(failing / total) * 100}%` }} />
           </div>
           <span className="text-sm text-stone-700">
-            {done} de {total} revisados
+            <span className="font-mono font-semibold">{done}</span>/{total} listos
+            {failing > 0 && (
+              <>
+                {" "}· <span className="font-mono font-semibold text-[#A32424]">{failing}</span> no pasan
+              </>
+            )}
+            {pending > 0 && (
+              <>
+                {" "}· <span className="font-mono font-semibold">{pending}</span> sin revisar
+              </>
+            )}
           </span>
         </div>
         <ActionButton
@@ -248,15 +262,26 @@ function QaTab({ page, w }: { page: Page; w: WorkItem }) {
           <RotateCcw aria-hidden className="size-4" /> Reiniciar
         </ActionButton>
       </div>
-      <p className="mb-3 text-sm text-stone-600">Clic en cada punto: pendiente → listo → no aplica.</p>
-      <div className="grid gap-3 sm:grid-cols-2">
+      <p className="mb-3 text-sm text-stone-600">
+        Para aprobar, cada punto pasa o no aplica (con motivo). «No pasa» abre una tarea crítica; al cerrarla, el punto vuelve a revisarse.
+      </p>
+      <div className="space-y-3">
         {groups.map((g) => (
           <Card key={g} title={g}>
-            <div className="-my-1 space-y-0.5">
+            <div className="-my-2 divide-y divide-stone-100">
               {w.qa
                 .filter((q) => q.group === g)
                 .map((q) => (
-                  <QaToggle key={`${q.id}-${q.status}`} pageId={page.id} workId={w.id} qaId={q.id} status={q.status} label={q.label} />
+                  <QaRow
+                    key={`${q.id}-${q.status}`}
+                    pageId={page.id}
+                    workId={w.id}
+                    qaId={q.id}
+                    status={q.status}
+                    label={q.label}
+                    reason={q.reason}
+                    taskOpen={Boolean(q.taskId && openTasks.has(q.taskId))}
+                  />
                 ))}
             </div>
           </Card>
@@ -328,6 +353,7 @@ function WorkStatus({ page, w, now }: { page: Page; w: WorkItem; now: Date }) {
 }
 
 export default async function PaginaDetalle({ params, searchParams }: PageProps<"/paginas/[id]">) {
+  await requirePage(`/paginas/${(await params).id}`);
   await connection();
   const now = new Date();
   const { id } = await params;
@@ -450,7 +476,7 @@ export default async function PaginaDetalle({ params, searchParams }: PageProps<
                 count: w.tasks.filter((t) => !t.done).length || undefined,
                 content: <TasksTab page={page} w={w} />,
               },
-              { id: "qa", label: qa.total ? `QA ${qa.done}/${qa.total}` : "QA", content: <QaTab page={page} w={w} /> },
+              { id: "qa", label: qa.total ? `QA ${qa.done}/${qa.total}` : "QA", count: qa.failing || undefined, alert: qa.failing > 0, content: <QaTab page={page} w={w} /> },
             ]}
           />
         </div>

@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useRef, useState, useTransition, type ReactNode } from "react";
 import { useFormStatus } from "react-dom";
-import { Check, Lock, Minus, Plus, RotateCcw, Unlock, X } from "lucide-react";
+import { Check, Lock, Plus, RotateCcw, Unlock, X } from "lucide-react";
 import {
   addAdjustment,
   addNote,
@@ -497,51 +497,96 @@ export function NoteComposer({ pageId, actor }: { pageId: string; actor: Actor }
 
 // ── QA y feedback ────────────────────────────────────────────────────────────
 
-const QA_NEXT: Record<QaStatus, QaStatus> = { Pendiente: "OK", OK: "N/A", "N/A": "Pendiente" };
+const QA_CHOICES: { status: QaStatus; label: string; on: string }[] = [
+  { status: "Pasa", label: "Pasa", on: "bg-emerald-700 text-white ring-emerald-700" },
+  { status: "No pasa", label: "No pasa", on: "bg-wlp-red text-white ring-wlp-red" },
+  { status: "No aplica", label: "No aplica", on: "bg-stone-700 text-white ring-stone-700" },
+];
 
-export function QaToggle({
+/** Un punto de QA: pasa, no pasa (abre tarea) o no aplica (con motivo). Clic de nuevo = pendiente. */
+export function QaRow({
   pageId,
   workId,
   qaId,
   status,
   label,
+  reason,
+  taskOpen,
 }: {
   pageId: string;
   workId: string;
   qaId: string;
   status: QaStatus;
   label: string;
+  reason?: string;
+  taskOpen: boolean;
 }) {
-  const [shown, setShown] = useState(status);
-  const [, start] = useTransition();
+  const [asking, setAsking] = useState(false);
+  const [pending, start] = useTransition();
+  const set = (next: QaStatus, why?: string) => start(() => setQa(pageId, workId, qaId, next, why));
   return (
-    <button
-      type="button"
-      role="checkbox"
-      aria-checked={shown === "OK" ? true : shown === "N/A" ? "mixed" : false}
-      aria-label={`${label}: ${shown === "N/A" ? "no aplica" : shown}`}
-      onClick={() => {
-        const next = QA_NEXT[shown];
-        setShown(next);
-        start(() => setQa(pageId, workId, qaId, next));
-      }}
-      className="flex min-h-9 w-full items-center gap-2.5 rounded-md px-1.5 text-left text-sm hover:bg-stone-50"
-    >
-      <span
-        aria-hidden
-        className={`grid size-5 shrink-0 place-items-center rounded border ${
-          shown === "OK"
-            ? "border-emerald-700 bg-emerald-700 text-white"
-            : shown === "N/A"
-              ? "border-stone-300 bg-stone-100 text-stone-500"
-              : "border-stone-400 bg-white"
-        }`}
-      >
-        {shown === "OK" ? <Check className="size-3.5" /> : shown === "N/A" ? <Minus className="size-3.5" /> : null}
-      </span>
-      <span className={shown === "N/A" ? "text-stone-500 line-through" : "text-stone-800"}>{label}</span>
-      {shown === "N/A" && <span className="ml-auto text-xs text-stone-500">No aplica</span>}
-    </button>
+    <div className={`py-2 ${pending ? "opacity-60" : ""}`}>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+        <p className={`min-w-40 flex-1 text-sm ${status === "No aplica" ? "text-stone-500" : "text-stone-900"}`}>{label}</p>
+        <div role="radiogroup" aria-label={label} className="flex gap-1">
+          {QA_CHOICES.map((c) => {
+            const checked = status === c.status;
+            return (
+              <button
+                key={c.status}
+                type="button"
+                role="radio"
+                aria-checked={checked}
+                disabled={pending}
+                onClick={() => {
+                  if (checked) return set("Pendiente");
+                  if (c.status === "No aplica") return setAsking(true);
+                  set(c.status);
+                }}
+                className={`min-h-8 rounded-md px-2.5 text-xs font-semibold ring-1 ring-inset transition-colors ${
+                  checked ? c.on : "text-stone-600 ring-stone-300 hover:text-stone-900 hover:ring-stone-500"
+                }`}
+              >
+                {c.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      {status === "No aplica" && reason && <p className="mt-1 text-xs text-stone-600">Motivo: {reason}</p>}
+      {status === "No pasa" && taskOpen && <p className="mt-1 text-xs font-medium text-[#A32424]">Tarea abierta en Tareas</p>}
+      {asking && (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            const why = String(new FormData(e.currentTarget).get("reason") ?? "").trim();
+            if (!why) return;
+            setAsking(false);
+            set("No aplica", why);
+          }}
+          className="mt-2 flex items-center gap-2"
+        >
+          <label className="sr-only" htmlFor={`qa-reason-${qaId}`}>
+            Motivo para no aplica
+          </label>
+          <input
+            id={`qa-reason-${qaId}`}
+            name="reason"
+            required
+            autoFocus
+            placeholder="¿Por qué no aplica?"
+            className={`${inputCls} py-1.5`}
+            onKeyDown={(e) => e.key === "Escape" && setAsking(false)}
+          />
+          <button type="submit" className={btn.ghost}>
+            Guardar
+          </button>
+          <button type="button" aria-label="Cancelar" onClick={() => setAsking(false)} className={btn.quiet}>
+            <X aria-hidden className="size-4" />
+          </button>
+        </form>
+      )}
+    </div>
   );
 }
 

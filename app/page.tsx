@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { requirePage } from "@/lib/auth";
 import { connection } from "next/server";
 import { AlertTriangle, Plus, Search, X } from "lucide-react";
 import { Badge, Masthead, PageBody, StagePill, stageDot } from "@/components/ui";
@@ -70,6 +71,7 @@ function Pipeline({ pages, tipo, etapa, q }: { pages: Page[]; tipo?: string; eta
 }
 
 export default async function PaginasHome({ searchParams }: PageProps<"/">) {
+  await requirePage("/");
   await connection();
   const now = new Date();
   const sp = await searchParams;

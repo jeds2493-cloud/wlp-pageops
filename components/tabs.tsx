@@ -28,7 +28,7 @@ export function Tabs({ tabs, initial }: { tabs: TabDef[]; initial?: string }) {
 
   return (
     <div>
-      <div role="tablist" className="mb-4 flex gap-1 overflow-x-auto border-b border-stone-200">
+      <div role="tablist" className="mb-4 flex gap-1 overflow-x-auto overflow-y-hidden border-b border-stone-200">
         {tabs.map((t, i) => {
           const selected = t.id === current.id;
           return (

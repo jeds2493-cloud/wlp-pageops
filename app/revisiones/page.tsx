@@ -1,9 +1,11 @@
 import Link from "next/link";
+import { requirePage } from "@/lib/auth";
 import { connection } from "next/server";
 import { Badge, Card, Empty, Masthead, PageBody } from "@/components/ui";
 import { daysSince, formatDate, getPages, mainWork, pendingFeedback } from "@/lib/data";
 
 export default async function Revisiones() {
+  await requirePage("/revisiones");
   await connection();
   const now = new Date();
   const pages = await getPages();

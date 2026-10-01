@@ -173,6 +173,6 @@ export function Masthead({
   );
 }
 
-export function PageBody({ children }: { children: ReactNode }) {
-  return <div className="mx-auto max-w-6xl px-4 py-6 md:px-10 md:py-8">{children}</div>;
+export function PageBody({ children, wide = false }: { children: ReactNode; wide?: boolean }) {
+  return <div className={`mx-auto px-4 py-6 md:px-10 md:py-8 ${wide ? "" : "max-w-6xl"}`}>{children}</div>;
 }

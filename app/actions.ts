@@ -5,10 +5,11 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { requireAction } from "@/lib/auth";
 import { stageWarnings } from "@/lib/logic";
 import { slugify } from "@/lib/seed";
 import { deletePage as removePage, loadPage, loadPages, savePage } from "@/lib/store";
-import { qaItems, SUGGESTED_SP } from "@/lib/templates";
+import { qaCategory, qaItems, SUGGESTED_SP } from "@/lib/templates";
 import {
   NOTE_KINDS,
   PAGE_TYPES,
@@ -74,6 +75,7 @@ function parseWp(raw: string): { wpPageId?: number; publicUrl?: string } {
 // ── Quién edita ──────────────────────────────────────────────────────────────
 
 export async function setActor(actor: Actor) {
+  await requireAction();
   (await cookies()).set(ACTOR_COOKIE, actor, { path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax" });
   revalidatePath("/", "layout");
 }
@@ -81,6 +83,7 @@ export async function setActor(actor: Actor) {
 // ── Páginas ──────────────────────────────────────────────────────────────────
 
 export async function createPage(fd: FormData) {
+  await requireAction();
   const title = str(fd, "title");
   if (!title) throw new Error("La página necesita un título.");
   const type = oneOf(PAGE_TYPES, str(fd, "type"), "Páginas Principales");
@@ -127,6 +130,7 @@ export async function createPage(fd: FormData) {
 }
 
 export async function updatePage(pageId: string, fd: FormData) {
+  await requireAction();
   await mutate(pageId, (page, { log }) => {
     const title = str(fd, "title");
     if (title && title !== page.title) {
@@ -161,6 +165,7 @@ export async function updatePage(pageId: string, fd: FormData) {
 }
 
 export async function dismissWarnings(pageId: string) {
+  await requireAction();
   await mutate(pageId, (page, { log }) => {
     page.importWarnings = [];
     log("Avisos de importación marcados como revisados.");
@@ -168,6 +173,7 @@ export async function dismissWarnings(pageId: string) {
 }
 
 export async function deletePage(pageId: string) {
+  await requireAction();
   await removePage(pageId);
   revalidatePath("/", "layout");
   redirect("/");
@@ -176,6 +182,7 @@ export async function deletePage(pageId: string) {
 // ── Trabajos y etapas ────────────────────────────────────────────────────────
 
 export async function setStage(pageId: string, workId: string, target: Stage) {
+  await requireAction();
   await mutate(pageId, (page, { log }) => {
     const w = work(page, workId);
     if (w.stage === target) return;
@@ -199,6 +206,9 @@ export async function setStage(pageId: string, workId: string, target: Stage) {
       open.result = "Cambios solicitados";
       open.respondedAt = today();
     }
+    // Entrega = cuando terminó tu parte. Si la página pasa directo a Publicado sin
+    // revisión, se registra igual para que cuente en los story points de la semana.
+    if (target === "Publicado") w.deliveredAt ??= today();
     if (target === "Publicado" && open) {
       open.result ??= "Aprobado";
       open.respondedAt ??= today();
@@ -209,6 +219,7 @@ export async function setStage(pageId: string, workId: string, target: Stage) {
 }
 
 export async function updateWork(pageId: string, workId: string, fd: FormData) {
+  await requireAction();
   await mutate(pageId, (page, { log }) => {
     const w = work(page, workId);
     const title = str(fd, "title");
@@ -235,6 +246,7 @@ export async function updateWork(pageId: string, workId: string, fd: FormData) {
 }
 
 export async function setBlocked(pageId: string, workId: string, fd: FormData) {
+  await requireAction();
   await mutate(pageId, (page, { log }) => {
     const w = work(page, workId);
     const reason = str(fd, "reason");
@@ -251,6 +263,7 @@ export async function setBlocked(pageId: string, workId: string, fd: FormData) {
 }
 
 export async function addAdjustment(pageId: string, fd: FormData) {
+  await requireAction();
   const title = str(fd, "title");
   if (!title) return;
   await mutate(pageId, (page, { log }) => {
@@ -271,6 +284,7 @@ export async function addAdjustment(pageId: string, fd: FormData) {
 }
 
 export async function deleteWork(pageId: string, workId: string) {
+  await requireAction();
   await mutate(pageId, (page, { log }) => {
     const w = work(page, workId);
     if (w.kind !== "Ajuste") throw new Error("Solo se pueden borrar ajustes.");
@@ -282,6 +296,7 @@ export async function deleteWork(pageId: string, workId: string) {
 // ── Revisiones y feedback ────────────────────────────────────────────────────
 
 export async function addFeedback(pageId: string, workId: string, reviewId: string, fd: FormData) {
+  await requireAction();
   // Cada línea del texto pegado es un punto de feedback.
   const lines = str(fd, "text")
     .split(/\n+/)
@@ -304,6 +319,7 @@ export async function setFeedbackStatus(
   status: FeedbackStatus,
   reason?: string,
 ) {
+  await requireAction();
   await mutate(pageId, (page, { log }) => {
     const f = work(page, workId)
       .reviews.find((x) => x.id === reviewId)
@@ -316,6 +332,7 @@ export async function setFeedbackStatus(
 }
 
 export async function feedbackToTask(pageId: string, workId: string, reviewId: string, feedbackId: string) {
+  await requireAction();
   await mutate(pageId, (page, { log }) => {
     const w = work(page, workId);
     const f = w.reviews.find((x) => x.id === reviewId)?.feedback.find((x) => x.id === feedbackId);
@@ -328,6 +345,7 @@ export async function feedbackToTask(pageId: string, workId: string, reviewId: s
 }
 
 export async function closeReview(pageId: string, workId: string, reviewId: string, result: "Aprobado" | "Cambios solicitados") {
+  await requireAction();
   await mutate(pageId, (page, { log }) => {
     const w = work(page, workId);
     const r = w.reviews.find((x) => x.id === reviewId);
@@ -337,6 +355,7 @@ export async function closeReview(pageId: string, workId: string, reviewId: stri
     if (result === "Aprobado") r.closedAt = today();
     const target: Stage = result === "Aprobado" ? "Publicado" : "Cambios solicitados";
     log(`Revisión #${r.number}: ${result}. Etapa: ${w.stage} → ${target}.`);
+    if (target === "Publicado") w.deliveredAt ??= today();
     w.stage = target;
     w.stageSince = today();
   });
@@ -345,6 +364,7 @@ export async function closeReview(pageId: string, workId: string, reviewId: stri
 // ── Tareas ───────────────────────────────────────────────────────────────────
 
 export async function addTask(pageId: string, workId: string, fd: FormData) {
+  await requireAction();
   const title = str(fd, "title");
   if (!title) return;
   await mutate(pageId, (page, { log }) => {
@@ -360,6 +380,7 @@ export async function addTask(pageId: string, workId: string, fd: FormData) {
 }
 
 export async function toggleTask(pageId: string, workId: string, taskId: string) {
+  await requireAction();
   await mutate(pageId, (page, { log }) => {
     const w = work(page, workId);
     const t = w.tasks.find((x) => x.id === taskId);
@@ -369,10 +390,17 @@ export async function toggleTask(pageId: string, workId: string, taskId: string)
     // Si la tarea vino de un feedback, el feedback se resuelve con ella.
     const f = w.reviews.flatMap((r) => r.feedback).find((x) => x.id === t.feedbackId);
     if (f) f.status = t.done ? "Resuelto" : "Pendiente";
+    // Si vino de un punto de QA que no pasó, al cerrarla el punto vuelve a revisarse.
+    const q = w.qa.find((x) => x.id === t.qaId);
+    if (q && t.done && q.status === "No pasa") {
+      q.status = "Pendiente";
+      log(`QA "${q.label}" vuelve a revisarse.`);
+    }
   });
 }
 
 export async function updateTask(pageId: string, workId: string, taskId: string, fd: FormData) {
+  await requireAction();
   await mutate(pageId, (page) => {
     const t = work(page, workId).tasks.find((x) => x.id === taskId);
     if (!t) return;
@@ -382,6 +410,7 @@ export async function updateTask(pageId: string, workId: string, taskId: string,
 }
 
 export async function deleteTask(pageId: string, workId: string, taskId: string) {
+  await requireAction();
   await mutate(pageId, (page, { log }) => {
     const w = work(page, workId);
     const t = w.tasks.find((x) => x.id === taskId);
@@ -394,14 +423,45 @@ export async function deleteTask(pageId: string, workId: string, taskId: string)
 
 // ── QA ───────────────────────────────────────────────────────────────────────
 
-export async function setQa(pageId: string, workId: string, qaId: string, status: QaStatus) {
-  await mutate(pageId, (page) => {
-    const q = work(page, workId).qa.find((x) => x.id === qaId);
-    if (q) q.status = status;
+export async function setQa(pageId: string, workId: string, qaId: string, status: QaStatus, reason?: string) {
+  await requireAction();
+  const why = reason?.trim();
+  if (status === "No aplica" && !why) throw new Error("Para marcar «No aplica» hace falta el motivo.");
+  await mutate(pageId, (page, { log }) => {
+    const w = work(page, workId);
+    const q = w.qa.find((x) => x.id === qaId);
+    if (!q || (q.status === status && q.reason === why)) return;
+    const openTask = w.tasks.find((t) => t.id === q.taskId && !t.done);
+    q.status = status;
+    q.reason = status === "No aplica" ? why : undefined;
+    if (status === "No pasa") {
+      // No pasa = abre una tarea crítica, ligada al punto.
+      if (!openTask) {
+        const task = {
+          id: uid(),
+          title: `QA: ${q.label}`,
+          category: qaCategory(page.type, q.group),
+          done: false,
+          critical: true,
+          qaId: q.id,
+        };
+        w.tasks.push(task);
+        q.taskId = task.id;
+      }
+      log(`QA "${q.label}": no pasa. Tarea abierta.`);
+      return;
+    }
+    // Pasa o no aplica: la tarea que abrió este punto ya no hace falta.
+    if (openTask && status !== "Pendiente") {
+      openTask.done = true;
+      log(`Tarea "${openTask.title}" cerrada con el punto de QA.`);
+    }
+    log(`QA "${q.label}": ${status.toLowerCase()}${q.reason ? ` (${q.reason})` : ""}.`);
   });
 }
 
 export async function resetQa(pageId: string, workId: string) {
+  await requireAction();
   await mutate(pageId, (page, { log }) => {
     const w = work(page, workId);
     w.qa = qaItems(page.type, `${w.id}-${uid()}`);
@@ -412,6 +472,7 @@ export async function resetQa(pageId: string, workId: string) {
 // ── Notas ────────────────────────────────────────────────────────────────────
 
 export async function addNote(pageId: string, fd: FormData) {
+  await requireAction();
   const body = str(fd, "body");
   if (!body) return;
   await mutate(pageId, (page, { actor, log }) => {
@@ -422,6 +483,7 @@ export async function addNote(pageId: string, fd: FormData) {
 }
 
 export async function deleteNote(pageId: string, noteId: string) {
+  await requireAction();
   await mutate(pageId, (page, { log }) => {
     page.notes = page.notes.filter((n) => n.id !== noteId);
     log("Nota eliminada.");
@@ -441,6 +503,7 @@ const WORK_FIELDS = {
 type WorkField = keyof typeof WORK_FIELDS;
 
 export async function setWorkField(pageId: string, workId: string, field: WorkField, raw: string) {
+  await requireAction();
   if (!(field in WORK_FIELDS)) throw new Error(`Campo no editable: ${field}`);
   await mutate(pageId, (page, { log }) => {
     const w = work(page, workId);

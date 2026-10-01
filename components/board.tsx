@@ -38,7 +38,7 @@ export function Board({ columns, cards }: { columns: Stage[]; cards: BoardCard[]
 
   return (
     <div className="-mx-4 overflow-x-auto px-4 pb-4 md:mx-0 md:px-0">
-      <div className="flex gap-3">
+      <div className="flex gap-2">
         {columns.map((col) => {
           const items = optimistic.filter((c) => c.stage === col);
           return (
@@ -55,7 +55,7 @@ export function Board({ columns, cards }: { columns: Stage[]; cards: BoardCard[]
                 const card = optimistic.find((c) => c.workId === e.dataTransfer.getData("text/plain"));
                 if (card) drop(card, col);
               }}
-              className={`w-64 shrink-0 rounded-wlp p-2.5 transition ${
+              className={`min-w-40 flex-1 basis-0 rounded-wlp p-2 transition ${
                 over === col ? "bg-[#FDF3CF] ring-2 ring-wlp-yellow" : "bg-stone-100"
               }`}
             >
@@ -81,7 +81,7 @@ export function Board({ columns, cards }: { columns: Stage[]; cards: BoardCard[]
                         e.dataTransfer.setData("text/plain", c.workId);
                         e.dataTransfer.effectAllowed = "move";
                       }}
-                      className="block cursor-grab rounded-[10px] border border-stone-200 bg-white p-3 text-sm transition hover:border-stone-900 active:cursor-grabbing"
+                      className="block cursor-grab rounded-[10px] border border-stone-200 bg-white p-2.5 text-sm transition hover:border-stone-900 active:cursor-grabbing"
                     >
                       <div className="leading-snug font-semibold">{c.title}</div>
                       {c.subtitle && <div className="mt-0.5 text-xs text-stone-500">{c.subtitle}</div>}

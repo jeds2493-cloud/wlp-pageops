@@ -1,4 +1,5 @@
 import { connection } from "next/server";
+import { requirePage } from "@/lib/auth";
 import { Board, type BoardCard } from "@/components/board";
 import { Masthead, PageBody } from "@/components/ui";
 import { getPages, pendingFeedback, stageWarnings } from "@/lib/data";
@@ -7,6 +8,7 @@ import { STAGES, type Stage } from "@/lib/types";
 const COLUMNS: Stage[] = ["Por hacer", "En curso", "QA", "Revisión Admin", "Cambios solicitados", "Publicado"];
 
 export default async function Tablero() {
+  await requirePage("/tablero");
   await connection();
   const pages = await getPages();
   const cards: BoardCard[] = pages.flatMap((p) =>
@@ -37,7 +39,7 @@ export default async function Tablero() {
           </>
         }
       />
-      <PageBody>
+      <PageBody wide>
         <Board columns={COLUMNS} cards={cards} />
       </PageBody>
     </>

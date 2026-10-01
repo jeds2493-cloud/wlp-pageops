@@ -104,16 +104,19 @@ export function openReview(w: WorkItem) {
   return last && !last.closedAt ? last : undefined;
 }
 
-export function qaProgress(w: WorkItem): { done: number; total: number } {
-  return { done: w.qa.filter((q) => q.status !== "Pendiente").length, total: w.qa.length };
+export function qaProgress(w: WorkItem): { done: number; total: number; failing: number; pending: number } {
+  const failing = w.qa.filter((q) => q.status === "No pasa").length;
+  const pending = w.qa.filter((q) => q.status === "Pendiente").length;
+  return { done: w.qa.length - failing - pending, total: w.qa.length, failing, pending };
 }
 
 /** Avisos (no bloqueos) al mover un trabajo de etapa. Ver §4 del plan. */
 export function stageWarnings(page: Page, w: WorkItem, target: Stage): string[] {
   const out: string[] = [];
   const qa = qaProgress(w);
-  if (target === "Revisión Admin" && qa.total && qa.done < qa.total) {
-    out.push(`El QA no está completo (${qa.done} de ${qa.total}).`);
+  if ((target === "Revisión Admin" || target === "Publicado") && qa.total) {
+    if (qa.failing) out.push(`QA: ${qa.failing} punto(s) no pasan.`);
+    if (qa.pending) out.push(`QA: ${qa.pending} punto(s) sin revisar.`);
   }
   if (target === "Publicado") {
     const fb = pendingFeedback(w);

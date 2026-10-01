@@ -1,10 +1,12 @@
 import Link from "next/link";
+import { requirePage } from "@/lib/auth";
 import { createPage } from "@/app/actions";
 import { SubmitButton } from "@/components/edit";
 import { Card, Field, inputCls, Masthead, PageBody } from "@/components/ui";
 import { PAGE_TYPES, PRIORITIES, STORY_POINTS } from "@/lib/types";
 
 export default async function NuevaPagina({ searchParams }: PageProps<"/paginas/nueva">) {
+  await requirePage("/paginas/nueva");
   const { tipo } = await searchParams;
   const defaultType = PAGE_TYPES.find((t) => t === tipo) ?? "Páginas Principales";
   return (

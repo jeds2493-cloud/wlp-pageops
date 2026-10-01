@@ -56,6 +56,8 @@ export interface Task {
   done: boolean;
   critical: boolean;
   feedbackId?: string;
+  /** Punto de QA que no pasó y generó esta tarea. */
+  qaId?: string;
 }
 
 export type FeedbackStatus = "Pendiente" | "Resuelto" | "Descartado";
@@ -97,13 +99,18 @@ export interface WorkItem {
   qa: QaItem[];
 }
 
-export type QaStatus = "Pendiente" | "OK" | "N/A";
+export const QA_STATUSES = ["Pendiente", "Pasa", "No pasa", "No aplica"] as const;
+export type QaStatus = (typeof QA_STATUSES)[number];
 
 export interface QaItem {
   id: string;
   group: string;
   label: string;
   status: QaStatus;
+  /** Motivo obligatorio cuando no aplica. */
+  reason?: string;
+  /** Tarea abierta cuando no pasa. */
+  taskId?: string;
 }
 
 export const NOTE_KINDS = ["Decisión técnica", "Indicación del Admin", "General"] as const;
@@ -135,6 +142,8 @@ export interface Page {
   docsUrl?: string;
   /** Problemas detectados al importar desde la hoja. */
   importWarnings: string[];
+  /** Versión del formato de datos (ver migrate en lib/store.ts). */
+  schema?: number;
   works: WorkItem[];
   notes: Note[];
   activity: ActivityEntry[];

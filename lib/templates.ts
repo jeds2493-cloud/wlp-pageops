@@ -1,49 +1,68 @@
-import type { PageType, QaItem } from "./types";
+import type { PageType, QaItem, TaskCategory } from "./types";
 
 export interface QaGroup {
   group: string;
+  /** Categoría de la tarea que se abre cuando un punto no pasa. */
+  category: TaskCategory;
   items: string[];
 }
 
+// Checklist de aprobación: las reglas que se revisan en cada página de WLP.
 const base: QaGroup[] = [
   {
     group: "Rendimiento",
+    category: "Rendimiento",
+    items: ["PageSpeed celular: 80 o más", "PageSpeed escritorio: 90 o más", "Caché de WP Rocket limpia"],
+  },
+  {
+    group: "Reglas WLP",
+    category: "Diseño/UI",
     items: [
-      "PageSpeed móvil ≥ objetivo",
-      "Imagen del hero optimizada (y decidido si se muestra en celular)",
-      "Iframes y mapas como imagen estática o con carga diferida",
-      "CSS/JS: bloque de código vs. hook, compatible con el diferido de WP Rocket",
+      "noindex revisado",
+      "Fondos alternados entre secciones",
+      "Sin rostros en las imágenes",
+      "Solo «California» como región",
+      "FAQs hechas en GenerateBlocks",
+      "El panda no tapa botones en celular",
     ],
   },
   {
-    group: "Color y diseño",
-    items: [
-      "Amarillo y negro con la saturación de la guía",
-      "Secciones claras revisadas",
-      "Consistente con las demás páginas V2",
-    ],
+    group: "Diseño y responsive",
+    category: "Responsive",
+    items: ["Amarillo y negro con la saturación de la guía", "Celular, tablet y escritorio sin desbordes"],
   },
-  { group: "Responsive", items: ["Móvil, tablet y escritorio", "Sin overflow horizontal"] },
-  { group: "Contenido", items: ["Copy revisado", "CTAs y teléfono correctos"] },
-  { group: "SEO", items: ["Title y meta description", "Un solo H1", "Slug final"] },
-  { group: "Técnico", items: ["Enlaces probados", "Formulario enviando", "Sin errores de consola"] },
-  { group: "Accesibilidad", items: ["Alt text", "Contraste", "Foco visible"] },
+  {
+    group: "Contenido y SEO",
+    category: "SEO",
+    items: ["Copy revisado", "CTAs y teléfono correctos", "Title y meta description", "Un solo H1 y slug final"],
+  },
+  {
+    group: "Técnico y accesibilidad",
+    category: "Bug",
+    items: ["Enlaces probados", "Sin errores de consola", "Alt text y contraste"],
+  },
+  { group: "Entrega", category: "WordPress", items: ["Reporte final con QR"] },
 ];
 
 const extras: Partial<Record<PageType, QaGroup>> = {
   "Landing Pages": {
     group: "Landing",
-    items: ["Tracking del canal", "Thank-you page", "Key events", "UTM"],
+    category: "Tracking",
+    items: ["Tracking del canal", "Thank-you page", "Key events y UTM"],
   },
-  Empleos: {
-    group: "Empleo",
-    items: ["Formulario de aplicación funcionando", "Datos del puesto correctos"],
-  },
+  Empleos: { group: "Empleo", category: "Copy", items: ["Datos del puesto correctos"] },
 };
 
 export function qaTemplate(type: PageType): QaGroup[] {
   const extra = extras[type];
   return extra ? [...base, extra] : base;
+}
+
+/** Labels del checklist anterior: si un trabajo aún los tiene sin marcar, se reemplaza. */
+export const LEGACY_QA_LABELS = ["PageSpeed móvil ≥ objetivo", "Formulario enviando"];
+
+export function qaCategory(type: PageType, group: string): TaskCategory {
+  return qaTemplate(type).find((g) => g.group === group)?.category ?? "Bug";
 }
 
 /** Checklist de QA listo para copiarse a un trabajo nuevo. */

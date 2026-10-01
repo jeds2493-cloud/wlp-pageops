@@ -23,8 +23,30 @@ firma notas, feedback y actividad mientras no haya login.
 (`lib/seed.ts`). `/respaldo` descarga todo en JSON. El esquema de Supabase para
 cuando haya login sigue en `supabase/schema.sql`.
 
-> Sin login, cualquiera con acceso al sitio puede editar: mantén el sitio en
-> modo privado en Netlify.
+## Acceso
+
+Mientras llega el login, la app pide una **contraseña compartida**. Se configura en
+Netlify → *Site configuration → Environment variables* como `PAGEOPS_PASSWORD` y se
+vuelve a publicar. Sin esa variable, en producción nadie puede entrar (la app lo avisa).
+Cambiar la contraseña cierra la sesión de todos. Se valida en el servidor en cada
+pantalla, cada acción de edición y en `/respaldo`. En local, sin la variable, se entra
+directo.
+
+## Cuidar los datos
+
+- **Antes de cualquier cambio que toque los datos guardados** (un reinicio, una
+  migración, un cambio de formato), baja el respaldo desde la barra lateral
+  (*Descargar respaldo*, `/respaldo`).
+- Las migraciones de formato guardan además un respaldo automático en Netlify Blobs,
+  una sola vez por migración: `backups/antes-schema-2` se descarga en
+  `/respaldo?copia=antes-schema-2`.
+- El almacén anterior al reinicio del 1 oct (`pageops`) sigue intacto.
+
+## Si se cae
+
+La pantalla de error muestra solo un código (Next oculta el mensaje por seguridad).
+El motivo real está en Netlify → *Logs → Functions*: busca el error más reciente con
+ese código.
 
 ## Correr en local
 
