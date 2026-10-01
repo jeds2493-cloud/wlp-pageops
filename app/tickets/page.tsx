@@ -17,6 +17,7 @@ export default async function Tickets() {
   await connection();
   const [tickets, pages] = await Promise.all([loadTickets(), getPages()]);
   const titles = new Map(pages.map((p) => [p.id, p.title]));
+  const pageOptions = pages.map((p) => ({ id: p.id, title: p.title }));
   const open = tickets
     .filter((t) => !t.closedAt)
     .sort((a, b) => PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority] || a.number - b.number);
@@ -39,7 +40,7 @@ export default async function Tickets() {
             {open.length ? (
               <ul className="grid gap-5 sm:grid-cols-2 2xl:grid-cols-3">
                 {open.map((t) => (
-                  <TearTicket key={t.id} ticket={t} pageTitle={t.pageId ? titles.get(t.pageId) : undefined} />
+                  <TearTicket key={t.id} ticket={t} pages={pageOptions} pageTitle={t.pageId ? titles.get(t.pageId) : undefined} />
                 ))}
               </ul>
             ) : (

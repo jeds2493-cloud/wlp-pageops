@@ -578,3 +578,17 @@ export async function deleteTicket(id: string) {
     if (i >= 0) tickets.splice(i, 1);
   });
 }
+
+export async function updateTicket(id: string, fd: FormData) {
+  await requireAction();
+  const title = str(fd, "title");
+  if (!title) return;
+  await mutateTickets((tickets) => {
+    const t = tickets.find((x) => x.id === id);
+    if (!t) return;
+    t.title = title;
+    t.detail = optional(fd, "detail");
+    t.priority = oneOf(PRIORITIES, str(fd, "priority"), t.priority) as Priority;
+    t.pageId = optional(fd, "pageId");
+  });
+}

@@ -7,11 +7,12 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
-import { Scissors } from "lucide-react";
-import { closeTicket } from "@/app/actions";
+import { Pencil, Scissors } from "lucide-react";
+import { closeTicket, updateTicket } from "@/app/actions";
 import { formatDateTime } from "@/lib/logic";
-import type { Ticket } from "@/lib/types";
-import { Badge } from "./ui";
+import { PRIORITIES, type Ticket } from "@/lib/types";
+import { buttonCls, SubmitButton } from "./edit";
+import { Badge, inputCls } from "./ui";
 
 const GRAVITY = 2400;
 const RETRACT = 0.17;
@@ -160,10 +161,11 @@ const freshSim = (): Sim => ({
   span: [],
 });
 
-const prefersReducedMotion = () =>
-  typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const prefersReducedMotion = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-export function TearTicket({ ticket, pageTitle }: { ticket: Ticket; pageTitle?: string }) {
+export function TearTicket({ ticket, pageTitle, pages }: { ticket: Ticket; pageTitle?: string; pages: { id: string; title: string }[] }) {
+  const [editing, setEditing] = useState(false);
+  const editBtnRef = useRef<HTMLButtonElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
   const stubRef = useRef<HTMLDivElement>(null);
@@ -331,7 +333,13 @@ export function TearTicket({ ticket, pageTitle }: { ticket: Ticket; pageTitle?: 
         s.sx += (0 - s.sx) * (1 - Math.exp(-dt / 0.07));
         s.sy += (0 - s.sy) * (1 - Math.exp(-dt / 0.07));
         if (Math.abs(s.theta) < 0.0008 && Math.abs(s.thetaV) < 0.01 && Math.hypot(s.sx, s.sy) < 0.05) {
-          Object.assign(s, { theta: 0, thetaV: 0, sx: 0, sy: 0, phase: "idle" as Phase });
+          Object.assign(s, {
+            theta: 0,
+            thetaV: 0,
+            sx: 0,
+            sy: 0,
+            phase: "idle" as Phase,
+          });
           s.snapped = [];
           s.snapAt = [];
         }
@@ -380,7 +388,14 @@ export function TearTicket({ ticket, pageTitle }: { ticket: Ticket; pageTitle?: 
     if (stubRef.current) stubRef.current.style.transformOrigin = `${s.hinge.x}px ${s.hinge.y}px`;
     s.snapped = g.bridges.map(() => true);
     s.snapAt = g.bridges.map(() => performance.now());
-    Object.assign(s, { phase: "drop" as Phase, vx: 260, vy: -380, spin: 2.4, age: 0, bv: -420 });
+    Object.assign(s, {
+      phase: "drop" as Phase,
+      vx: 260,
+      vy: -380,
+      spin: 2.4,
+      age: 0,
+      bv: -420,
+    });
     run();
   };
 
@@ -392,7 +407,14 @@ export function TearTicket({ ticket, pageTitle }: { ticket: Ticket; pageTitle?: 
       e.currentTarget.setPointerCapture(e.pointerId);
     } catch {}
     const p = local(e);
-    Object.assign(s, { id: e.pointerId, start: p, point: p, pt: performance.now(), pvx: 0, pvy: 0 });
+    Object.assign(s, {
+      id: e.pointerId,
+      start: p,
+      point: p,
+      pt: performance.now(),
+      pvx: 0,
+      pvy: 0,
+    });
     if (s.theta < 0.01) {
       const far = p.y < g.cross / 2;
       const end = g.ends[far ? 1 : 0];
@@ -405,7 +427,10 @@ export function TearTicket({ ticket, pageTitle }: { ticket: Ticket; pageTitle?: 
     const sin = Math.sin(-s.theta * s.sign);
     const ux = p.x - s.sx - s.hinge.x;
     const uy = p.y - s.sy - s.hinge.y;
-    s.grab = { x: s.hinge.x + ux * cos - uy * sin, y: s.hinge.y + ux * sin + uy * cos };
+    s.grab = {
+      x: s.hinge.x + ux * cos - uy * sin,
+      y: s.hinge.y + ux * sin + uy * cos,
+    };
     s.a0 = Math.atan2(s.grab.y - s.hinge.y, s.grab.x - s.hinge.x) - (s.theta * s.sign) / 0.92;
     s.phase = "held";
     s.thetaV = 0;
@@ -471,34 +496,122 @@ export function TearTicket({ ticket, pageTitle }: { ticket: Ticket; pageTitle?: 
         {/* Cuerpo: en el flujo normal, así crece con el detalle */}
         <div ref={bodyRef} className="relative will-change-transform">
           {geo && (
-            <svg aria-hidden className="pointer-events-none absolute inset-0 z-10 size-full overflow-visible" viewBox={`0 0 ${size.w} ${size.h}`}>
+            <svg
+              aria-hidden
+              className="pointer-events-none absolute inset-0 z-10 size-full overflow-visible"
+              viewBox={`0 0 ${size.w} ${size.h}`}
+            >
               <path d={geo.bodyOutline} fill="none" stroke={EDGE} strokeWidth={1} />
             </svg>
           )}
           <article
             aria-label={`Ticket ${number}: ${ticket.title}`}
             className="flex min-h-36 flex-col bg-white p-5 select-text"
-            style={{ paddingRight: STUB + 20, clipPath: geo ? `path('${geo.body}')` : undefined, borderRadius: geo ? undefined : RADIUS }}
+            style={{
+              paddingRight: STUB + 20,
+              clipPath: geo ? `path('${geo.body}')` : undefined,
+              borderRadius: geo ? undefined : RADIUS,
+            }}
           >
-            <div className="mb-2 flex items-center gap-2">
-              <span className="font-mono text-xs font-semibold text-stone-500">{number}</span>
-              {ticket.priority !== "Normal" && (
-                <Badge tone={ticket.priority === "Urgente" || ticket.priority === "Alta" ? "warn" : "neutral"}>{ticket.priority}</Badge>
-              )}
-            </div>
-            <h3 className="text-base leading-snug font-semibold text-balance text-stone-900">{ticket.title}</h3>
-            {ticket.detail && <p className="mt-1 text-sm whitespace-pre-line text-stone-600">{ticket.detail}</p>}
-            <p className="mt-auto pt-3 text-xs text-stone-500">
-              {ticket.createdBy} · {formatDateTime(ticket.createdAt)}
-              {ticket.pageId && pageTitle && (
-                <>
-                  {" · "}
-                  <Link href={`/paginas/${ticket.pageId}`} className="font-medium text-stone-700 underline-offset-2 hover:underline">
-                    {pageTitle}
-                  </Link>
-                </>
-              )}
-            </p>
+            {editing ? (
+              <form
+                action={async (fd) => {
+                  await updateTicket(ticket.id, fd);
+                  setEditing(false);
+                  requestAnimationFrame(() => editBtnRef.current?.focus());
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") {
+                    setEditing(false);
+                    requestAnimationFrame(() => editBtnRef.current?.focus());
+                  }
+                }}
+                className="space-y-2.5"
+                aria-label={`Editar ticket ${number}`}
+              >
+                <span className="font-mono text-xs font-semibold text-stone-500">{number}</span>
+                <label className="block">
+                  <span className="sr-only">Título</span>
+                  <input name="title" required defaultValue={ticket.title} autoFocus className={`${inputCls} font-semibold`} />
+                </label>
+                <label className="block">
+                  <span className="sr-only">Detalle</span>
+                  <textarea
+                    name="detail"
+                    rows={4}
+                    defaultValue={ticket.detail ?? ""}
+                    placeholder="Detalle (opcional)"
+                    className={inputCls}
+                  />
+                </label>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <label className="block">
+                    <span className="sr-only">Prioridad</span>
+                    <select name="priority" defaultValue={ticket.priority} className={inputCls}>
+                      {PRIORITIES.map((p) => (
+                        <option key={p}>{p}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="block">
+                    <span className="sr-only">Página</span>
+                    <select name="pageId" defaultValue={ticket.pageId ?? ""} className={inputCls}>
+                      <option value="">Sin página</option>
+                      {pages.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.title}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+                <div className="flex gap-2">
+                  <SubmitButton>Guardar</SubmitButton>
+                  <button
+                    type="button"
+                    className={buttonCls.quiet}
+                    onClick={() => {
+                      setEditing(false);
+                      requestAnimationFrame(() => editBtnRef.current?.focus());
+                    }}
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <>
+                <div className="mb-2 flex items-center gap-2">
+                  <span className="font-mono text-xs font-semibold text-stone-500">{number}</span>
+                  {ticket.priority !== "Normal" && (
+                    <Badge tone={ticket.priority === "Urgente" || ticket.priority === "Alta" ? "warn" : "neutral"}>{ticket.priority}</Badge>
+                  )}
+                  <button
+                    ref={editBtnRef}
+                    type="button"
+                    onClick={() => setEditing(true)}
+                    aria-label={`Editar ticket ${number}`}
+                    title="Editar"
+                    className={`${buttonCls.quiet} -my-1.5 ml-auto px-2`}
+                  >
+                    <Pencil aria-hidden className="size-4" />
+                  </button>
+                </div>
+                <h3 className="text-base leading-snug font-semibold text-balance text-stone-900">{ticket.title}</h3>
+                {ticket.detail && <p className="mt-1 text-sm whitespace-pre-line text-stone-600">{ticket.detail}</p>}
+                <p className="mt-auto pt-3 text-xs text-stone-500">
+                  {ticket.createdBy} · {formatDateTime(ticket.createdAt)}
+                  {ticket.pageId && pageTitle && (
+                    <>
+                      {" · "}
+                      <Link href={`/paginas/${ticket.pageId}`} className="font-medium text-stone-700 underline-offset-2 hover:underline">
+                        {pageTitle}
+                      </Link>
+                    </>
+                  )}
+                </p>
+              </>
+            )}
           </article>
         </div>
 
