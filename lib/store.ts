@@ -86,7 +86,9 @@ async function index(): Promise<string[]> {
   // Primera vez: cargar los datos de la hoja. El índice se escribe al final,
   // así que si algo falla a medias se vuelve a intentar completo.
   seeding ??= (async () => {
-    for (const p of seedPages) await db().set(pageKey(p.id), p);
+    // En paralelo: en Netlify cada escritura es una petición de red, y en fila
+    // la primera carga podía pasar el límite de tiempo de la función.
+    await Promise.all(seedPages.map((p) => db().set(pageKey(p.id), p)));
     const seeded = seedPages.map((p) => p.id);
     await db().set(INDEX_KEY, seeded);
     return seeded;
