@@ -29,9 +29,8 @@ export default async function Tablero() {
   return (
     <>
       <PageHeader
-        eyebrow="Producción web"
         title="Tablero"
-        subtitle="Arrastra una tarjeta para cambiarla de etapa. Cada tarjeta es un trabajo: la página V2 o un ajuste."
+        subtitle="Arrastra una tarjeta para cambiar su etapa, o enfócala y usa Alt + ← / →. Cada tarjeta es un trabajo: la página V2 o un ajuste."
       />
       <Board columns={COLUMNS} cards={cards} />
     </>

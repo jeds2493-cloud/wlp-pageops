@@ -61,7 +61,7 @@ export function Board({ columns, cards }: { columns: Stage[]; cards: BoardCard[]
             >
               <header className="mb-2 flex items-center justify-between px-1">
                 <StagePill stage={col} />
-                <span className="font-mono text-xs text-stone-500">{items.length}</span>
+                <span className="text-xs font-semibold text-stone-600">{items.length}</span>
               </header>
               <ul className="min-h-16 space-y-2">
                 {items.map((c) => (
@@ -69,6 +69,14 @@ export function Board({ columns, cards }: { columns: Stage[]; cards: BoardCard[]
                     <Link
                       href={`/paginas/${c.pageId}?w=${c.workId}`}
                       draggable
+                      aria-keyshortcuts="Alt+ArrowLeft Alt+ArrowRight"
+                      aria-label={`${c.title}${c.subtitle ? ` (${c.subtitle})` : ""}, ${c.stage}. Alt más flechas para mover de etapa.`}
+                      onKeyDown={(e) => {
+                        if (!e.altKey || (e.key !== "ArrowLeft" && e.key !== "ArrowRight")) return;
+                        e.preventDefault();
+                        const i = columns.indexOf(c.stage) + (e.key === "ArrowRight" ? 1 : -1);
+                        if (i >= 0 && i < columns.length) drop(c, columns[i]);
+                      }}
                       onDragStart={(e) => {
                         e.dataTransfer.setData("text/plain", c.workId);
                         e.dataTransfer.effectAllowed = "move";
@@ -76,7 +84,7 @@ export function Board({ columns, cards }: { columns: Stage[]; cards: BoardCard[]
                       className="block cursor-grab rounded-[10px] border border-stone-200 bg-white p-3 text-sm transition hover:border-stone-900 active:cursor-grabbing"
                     >
                       <div className="leading-snug font-semibold">{c.title}</div>
-                      {c.subtitle && <div className="mt-0.5 text-xs text-stone-400">{c.subtitle}</div>}
+                      {c.subtitle && <div className="mt-0.5 text-xs text-stone-500">{c.subtitle}</div>}
                       <div className="mt-2 flex flex-wrap items-center gap-1">
                         <Badge>{c.kind}</Badge>
                         {c.storyPoints !== undefined && <Badge>{c.storyPoints} SP</Badge>}

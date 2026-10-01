@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Plus } from "lucide-react";
 import { connection } from "next/server";
 import { Badge, Empty, PageHeader, StagePill } from "@/components/ui";
 import {
@@ -36,12 +37,12 @@ export default async function PaginasPage({ searchParams }: PageProps<"/paginas"
 
   return (
     <>
-      <PageHeader eyebrow="Producción web" title="Páginas" subtitle={`${all.length} páginas dadas de alta`}>
+      <PageHeader title="Páginas" subtitle={`${all.length} páginas dadas de alta`}>
         <Link
           href={tipo ? `/paginas/nueva?tipo=${encodeURIComponent(tipo)}` : "/paginas/nueva"}
-          className="rounded-lg bg-wlp-yellow px-4 py-2 text-sm font-semibold text-stone-900 transition hover:bg-wlp-yellow-hover active:scale-[0.97]"
+          className="inline-flex min-h-10 items-center gap-1.5 rounded-lg bg-wlp-yellow px-4 text-sm font-semibold text-stone-900 transition-colors hover:bg-wlp-yellow-hover"
         >
-          + Nueva página
+          <Plus aria-hidden className="size-4" /> Nueva página
         </Link>
       </PageHeader>
 
@@ -57,7 +58,7 @@ export default async function PaginasPage({ searchParams }: PageProps<"/paginas"
               }`}
             >
               {t ?? "Todas"}{" "}
-              <span className="text-stone-400">{t ? counts[t] ?? 0 : all.length}</span>
+              <span className="text-stone-500">{t ? counts[t] ?? 0 : all.length}</span>
             </Link>
           );
         })}
@@ -84,7 +85,7 @@ export default async function PaginasPage({ searchParams }: PageProps<"/paginas"
       <div className="overflow-x-auto rounded-wlp border border-stone-200 bg-white">
         <table className="w-full min-w-[720px] text-sm">
           <thead>
-            <tr className="border-b border-stone-200 text-left font-mono text-[10.5px] tracking-[0.1em] text-stone-500 uppercase">
+            <tr className="border-b border-stone-200 text-left text-xs text-stone-600">
               <th className="px-5 py-3 font-medium">Página</th>
               <th className="px-3 py-2.5 font-medium">Etapa</th>
               <th className="px-3 py-2.5 font-medium">En esta etapa</th>
@@ -106,7 +107,7 @@ export default async function PaginasPage({ searchParams }: PageProps<"/paginas"
                     <Link href={`/paginas/${p.id}`} className="font-semibold text-stone-900 decoration-wlp-yellow decoration-2 underline-offset-4 hover:underline">
                       {p.title}
                     </Link>
-                    <div className="text-xs text-stone-400">
+                    <div className="text-xs text-stone-500">
                       {p.type}
                       {p.channel && ` · ${p.channel}`}
                     </div>

@@ -9,12 +9,13 @@ export default async function NuevaPagina({ searchParams }: PageProps<"/paginas/
   const defaultType = PAGE_TYPES.find((t) => t === tipo) ?? "Páginas Principales";
   return (
     <>
-      <Link href="/paginas" className="text-xs text-stone-500 hover:text-stone-800">
-        ← Páginas
-      </Link>
+      <nav aria-label="Ruta" className="mb-3 text-sm text-stone-600">
+        <Link href="/paginas" className="hover:text-stone-900 hover:underline">
+          Páginas
+        </Link>
+      </nav>
       <div className="mt-2">
         <PageHeader
-          eyebrow="Producción web"
           title="Nueva página"
           subtitle="Se crea con su trabajo principal y el checklist de QA de su tipo."
         />

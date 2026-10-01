@@ -18,7 +18,7 @@ export default async function Revisiones() {
 
   return (
     <>
-      <PageHeader eyebrow="Admin"
+      <PageHeader
         title="Revisiones" subtitle="Lo que está esperando al Admin y lo que regresó con cambios" />
       <div className="grid gap-4 lg:grid-cols-2">
         <Card title={`Esperando al Admin · ${waiting.length}`}>
@@ -33,7 +33,7 @@ export default async function Revisiones() {
                       <Link href={`/paginas/${p.id}`} className="font-medium hover:underline">
                         {p.title}
                       </Link>
-                      <div className="text-xs text-stone-400">
+                      <div className="text-xs text-stone-500">
                         Revisión #{review?.number} · desde {formatDate(review?.requestedAt)}
                         {fb > 0 && ` · ${fb} puntos de feedback`}
                       </div>

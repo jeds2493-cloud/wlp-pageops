@@ -32,27 +32,48 @@ html {
   color-scheme: light;
 }
 
-/* Etiqueta de sección de WLP: mono, mayúsculas, con la raya amarilla. */
-.eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--color-stone-500);
-}
-.eyebrow::before {
-  content: "";
-  width: 18px;
-  height: 2px;
-  background: var(--color-wlp-yellow);
-  flex-shrink: 0;
+body {
+  font-variant-numeric: tabular-nums;
 }
 
 ::selection {
   background: var(--color-wlp-yellow);
   color: var(--color-stone-900);
+}
+
+/* Foco visible y consistente en toda la app (teclado). */
+:focus-visible {
+  outline: 2px solid var(--color-stone-900);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--color-wlp-yellow);
+  outline-offset: 1px;
+}
+
+* {
+  scrollbar-color: var(--color-stone-300) transparent;
+  scrollbar-width: thin;
+}
+
+a {
+  text-underline-offset: 3px;
+}
+
+/* Fechas nativas: el ícono del calendario con el color del texto. */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 0.6;
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
 }

@@ -429,3 +429,35 @@ export async function deleteNote(pageId: string, noteId: string) {
     log("Nota eliminada.");
   });
 }
+
+// ── Edición en línea (se guarda al cambiar el campo) ─────────────────────────
+
+const WORK_FIELDS = {
+  title: "Título",
+  priority: "Prioridad",
+  storyPoints: "Story points",
+  startDate: "Inicio",
+  dueDate: "Fecha de entrega",
+  deliveredAt: "Entregada el",
+} as const;
+type WorkField = keyof typeof WORK_FIELDS;
+
+export async function setWorkField(pageId: string, workId: string, field: WorkField, raw: string) {
+  if (!(field in WORK_FIELDS)) throw new Error(`Campo no editable: ${field}`);
+  await mutate(pageId, (page, { log }) => {
+    const w = work(page, workId);
+    const value = raw.trim();
+    const before = w[field];
+    if (field === "title") {
+      if (!value) return;
+      w.title = value;
+    } else if (field === "priority") {
+      w.priority = oneOf(PRIORITIES, value, w.priority) as Priority;
+    } else if (field === "storyPoints") {
+      w.storyPoints = Number(value) || undefined;
+    } else {
+      w[field] = value || undefined;
+    }
+    if (before !== w[field]) log(`${WORK_FIELDS[field]}: ${before ?? "—"} → ${w[field] ?? "—"}.`);
+  });
+}

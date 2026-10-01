@@ -17,9 +17,8 @@ export default async function Inicio() {
   return (
     <>
       <PageHeader
-        eyebrow={now.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" })}
         title="Inicio"
-        subtitle="Lo que necesita tu atención hoy"
+        subtitle={`${now.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" })} · lo que necesita atención`}
       />
 
       <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -63,7 +62,7 @@ export default async function Inicio() {
                 <Link href={`/paginas/${p.id}`} className="hover:underline">
                   {p.title}
                 </Link>
-                <span className="text-xs text-stone-400">{mainWork(p).storyPoints} SP</span>
+                <span className="font-mono text-xs text-stone-500">{mainWork(p).storyPoints} SP</span>
               </li>
             ))}
           </ul>

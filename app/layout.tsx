@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { Barlow_Semi_Condensed, IBM_Plex_Mono, Inter } from "next/font/google";
 import { cookies } from "next/headers";
+import { Download } from "lucide-react";
 import { ActorSwitch } from "@/components/edit";
 import { Nav } from "@/components/nav";
 import "./globals.css";
@@ -30,16 +31,16 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
               <Image src="/wlp-logo.png" alt="We Love Paving" width={52} height={30} priority />
               <div className="leading-none">
                 <div className="font-display text-lg font-extrabold tracking-wide text-white uppercase">PageOps</div>
-                <div className="mt-1 font-mono text-[10px] tracking-[0.12em] text-stone-500 uppercase">welovepaving.com</div>
+                <div className="mt-1 text-xs text-stone-400">welovepaving.com</div>
               </div>
             </div>
             <Nav />
             <ActorSwitch actor={actor} />
             <a
               href="/respaldo"
-              className="mt-6 hidden font-mono text-[10px] tracking-[0.12em] text-stone-500 uppercase hover:text-wlp-yellow md:block"
+              className="mt-6 hidden min-h-9 items-center gap-2 rounded-lg px-3 text-sm text-stone-400 hover:bg-wlp-dark-2 hover:text-white md:flex"
             >
-              ↓ Descargar respaldo
+              <Download aria-hidden className="size-4" /> Descargar respaldo
             </a>
           </aside>
           <main className="min-w-0 flex-1 px-4 py-6 md:px-10 md:py-10">

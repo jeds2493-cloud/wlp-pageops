@@ -1,23 +1,44 @@
 "use client";
 
-import { useState, useTransition, type ReactNode } from "react";
+import { useActionState, useEffect, useRef, useState, useTransition, type ReactNode } from "react";
 import { useFormStatus } from "react-dom";
-import { setActor, setFeedbackStatus, setQa, setStage } from "@/app/actions";
-import type { Actor, QaStatus, Stage } from "@/lib/types";
+import { Check, Lock, Minus, Plus, RotateCcw, Unlock, X } from "lucide-react";
+import {
+  addAdjustment,
+  addNote,
+  closeReview,
+  setActor,
+  setBlocked,
+  setFeedbackStatus,
+  setQa,
+  setStage,
+  setWorkField,
+  updatePage,
+} from "@/app/actions";
+import { formatDate } from "@/lib/logic";
+import { BLOCK_REASONS, NOTE_KINDS, type Actor, type QaStatus, type Stage } from "@/lib/types";
+import { Field, inputCls } from "./ui";
+
+const btn = {
+  primary:
+    "inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg bg-wlp-yellow px-4 text-sm font-semibold text-stone-900 transition-colors hover:bg-wlp-yellow-hover disabled:opacity-50",
+  ghost:
+    "inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg border border-stone-300 bg-white px-4 text-sm font-semibold text-stone-800 transition-colors hover:border-stone-900 disabled:opacity-50",
+  quiet:
+    "inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg px-2.5 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-100 hover:text-stone-900 disabled:opacity-50",
+};
+export const buttonCls = btn;
+
+function confirmWarnings(target: string, warnings: string[] | undefined): boolean {
+  if (!warnings?.length) return true;
+  return window.confirm(`Antes de mover a "${target}":\n\n• ${warnings.join("\n• ")}\n\n¿Continuar de todas formas?`);
+}
 
 /** Botón de envío de formulario con estado de "guardando". */
-export function SubmitButton({ children, variant = "primary" }: { children: ReactNode; variant?: "primary" | "ghost" }) {
+export function SubmitButton({ children, variant = "primary" }: { children: ReactNode; variant?: keyof typeof btn }) {
   const { pending } = useFormStatus();
   return (
-    <button
-      type="submit"
-      disabled={pending}
-      className={`inline-flex items-center justify-center rounded-lg px-3.5 py-2 text-sm font-semibold transition active:scale-[0.97] disabled:opacity-50 ${
-        variant === "primary"
-          ? "bg-wlp-yellow text-stone-900 hover:bg-wlp-yellow-hover"
-          : "border border-stone-300 bg-white text-stone-800 hover:border-stone-900"
-      }`}
-    >
+    <button type="submit" disabled={pending} className={btn[variant]}>
       {pending ? "Guardando…" : children}
     </button>
   );
@@ -28,26 +49,27 @@ export function ActionButton({
   action,
   confirmText,
   children,
-  className = "",
-  title,
+  className = btn.quiet,
+  label,
 }: {
   action: () => Promise<void>;
   confirmText?: string;
   children: ReactNode;
   className?: string;
-  title?: string;
+  label?: string;
 }) {
   const [pending, start] = useTransition();
   return (
     <button
       type="button"
-      title={title}
+      aria-label={label}
+      title={label}
       disabled={pending}
       onClick={() => {
         if (confirmText && !window.confirm(confirmText)) return;
         start(() => action());
       }}
-      className={`transition disabled:opacity-50 ${className}`}
+      className={className}
     >
       {children}
     </button>
@@ -57,16 +79,17 @@ export function ActionButton({
 export function ActorSwitch({ actor }: { actor: Actor }) {
   const [pending, start] = useTransition();
   return (
-    <div className="mt-3 md:mt-6">
-      <p className="mb-2 hidden font-mono text-[10px] tracking-[0.12em] text-stone-500 uppercase md:block">Editando como</p>
+    <div className="mt-3 md:mt-6" role="group" aria-label="Editando como">
+      <p className="mb-2 hidden text-xs font-medium text-stone-400 md:block">Editando como</p>
       <div className="grid grid-cols-2 gap-1 rounded-lg bg-wlp-dark-2 p-1">
         {(["Producción", "Admin"] as const).map((a) => (
           <button
             key={a}
             type="button"
+            aria-pressed={actor === a}
             disabled={pending}
             onClick={() => start(() => setActor(a))}
-            className={`rounded-md px-2 py-1.5 text-xs font-semibold transition ${
+            className={`min-h-9 rounded-md px-2 text-sm font-semibold transition-colors ${
               actor === a ? "bg-wlp-yellow text-stone-900" : "text-stone-400 hover:text-white"
             }`}
           >
@@ -78,47 +101,401 @@ export function ActorSwitch({ actor }: { actor: Actor }) {
   );
 }
 
-export function StageSelect({
+// ── Etapas ───────────────────────────────────────────────────────────────────
+
+const PATH: Stage[] = ["Por hacer", "En curso", "QA", "Revisión Admin", "Publicado"];
+
+/** La barra de etapas es el único control de etapa: clic en un paso para moverse. */
+export function StageStepper({
   pageId,
   workId,
   stage,
-  stages,
   warnings,
 }: {
   pageId: string;
   workId: string;
   stage: Stage;
-  stages: readonly Stage[];
   warnings: Partial<Record<Stage, string[]>>;
 }) {
   const [pending, start] = useTransition();
+  const steps: Stage[] =
+    stage === "Cambios solicitados" ? [...PATH.slice(0, 4), "Cambios solicitados", "Publicado"] : stage === "Archivado" ? [...PATH, "Archivado"] : PATH;
+  const idx = steps.indexOf(stage);
   return (
-    <label className="inline-flex items-center gap-2 text-sm">
-      <span className="font-mono text-[10.5px] tracking-[0.1em] text-stone-500 uppercase">Mover a</span>
-      <select
-        value={stage}
-        disabled={pending}
-        onChange={(e) => {
-          const target = e.target.value as Stage;
-          const w = warnings[target] ?? [];
-          if (w.length && !window.confirm(`Antes de mover a "${target}":\n\n• ${w.join("\n• ")}\n\n¿Continuar de todas formas?`)) {
-            e.target.value = stage;
-            return;
-          }
-          start(() => setStage(pageId, workId, target));
-        }}
-        className="rounded-lg border border-stone-300 bg-white px-2.5 py-1.5 text-sm font-semibold focus:border-stone-900 focus:outline-none"
-      >
-        {stages.map((s) => (
-          <option key={s} value={s}>
-            {s}
-          </option>
-        ))}
-      </select>
-      {pending && <span className="text-xs text-stone-400">Guardando…</span>}
-    </label>
+    <ol aria-label="Etapa" className={`flex flex-wrap items-center gap-1 ${pending ? "opacity-60" : ""}`}>
+      {steps.map((s, i) => {
+        const current = i === idx;
+        return (
+          <li key={s} className="flex items-center gap-1">
+            <button
+              type="button"
+              aria-current={current ? "step" : undefined}
+              disabled={pending || current}
+              onClick={() => confirmWarnings(s, warnings[s]) && start(() => setStage(pageId, workId, s))}
+              className={`min-h-8 rounded-full px-3 text-sm transition-colors ${
+                current
+                  ? s === "Cambios solicitados"
+                    ? "bg-wlp-red font-semibold text-white"
+                    : "bg-wlp-dark font-semibold text-wlp-yellow"
+                  : i < idx
+                    ? "bg-stone-200 text-stone-700 hover:bg-stone-300"
+                    : "text-stone-500 ring-1 ring-inset ring-stone-300 hover:text-stone-900 hover:ring-stone-500"
+              }`}
+            >
+              {i < idx && <Check aria-hidden className="mr-1 inline size-3.5 -translate-y-px" />}
+              {s}
+            </button>
+            {i < steps.length - 1 && <span aria-hidden className="h-px w-2 bg-stone-300" />}
+          </li>
+        );
+      })}
+    </ol>
   );
 }
+
+/** Una sola acción principal, según la etapa del trabajo. */
+export function StageCTA({
+  pageId,
+  workId,
+  stage,
+  nextReview,
+  openReviewId,
+  pending,
+  warnings,
+}: {
+  pageId: string;
+  workId: string;
+  stage: Stage;
+  nextReview: number;
+  openReviewId?: string;
+  pending: number;
+  warnings: Partial<Record<Stage, string[]>>;
+}) {
+  const [busy, start] = useTransition();
+  const go = (target: Stage, extra?: string) => {
+    const w = [...(warnings[target] ?? []), ...(extra ? [extra] : [])];
+    if (confirmWarnings(target, w)) start(() => setStage(pageId, workId, target));
+  };
+  switch (stage) {
+    case "Por hacer":
+      return (
+        <button type="button" disabled={busy} onClick={() => go("En curso")} className={btn.primary}>
+          Empezar
+        </button>
+      );
+    case "En curso":
+      return (
+        <button type="button" disabled={busy} onClick={() => go("QA")} className={btn.primary}>
+          Pasar a QA
+        </button>
+      );
+    case "QA":
+      return (
+        <button type="button" disabled={busy} onClick={() => go("Revisión Admin")} className={btn.primary}>
+          Solicitar revisión #{nextReview}
+        </button>
+      );
+    case "Cambios solicitados":
+      return (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => go("Revisión Admin", pending ? `Quedan ${pending} punto(s) de feedback sin resolver.` : undefined)}
+          className={btn.primary}
+        >
+          Reenviar a revisión #{nextReview}
+        </button>
+      );
+    case "Revisión Admin":
+      return (
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => {
+              if (pending && !window.confirm(`Quedan ${pending} punto(s) de feedback sin resolver. ¿Aprobar y publicar de todas formas?`)) return;
+              start(() => (openReviewId ? closeReview(pageId, workId, openReviewId, "Aprobado") : setStage(pageId, workId, "Publicado")));
+            }}
+            className={btn.primary}
+          >
+            <Check aria-hidden className="size-4" /> Aprobar y publicar
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() =>
+              start(() =>
+                openReviewId ? closeReview(pageId, workId, openReviewId, "Cambios solicitados") : setStage(pageId, workId, "Cambios solicitados"),
+              )
+            }
+            className={btn.ghost}
+          >
+            Pedir cambios
+          </button>
+        </div>
+      );
+    case "Archivado":
+      return (
+        <button type="button" disabled={busy} onClick={() => go("Por hacer")} className={btn.ghost}>
+          <RotateCcw aria-hidden className="size-4" /> Reabrir
+        </button>
+      );
+    default:
+      return (
+        <span className="inline-flex min-h-10 items-center gap-1.5 text-sm font-semibold text-emerald-700">
+          <Check aria-hidden className="size-4" /> Publicada
+        </span>
+      );
+  }
+}
+
+// ── Edición en línea ─────────────────────────────────────────────────────────
+
+type WorkField = "title" | "priority" | "storyPoints" | "startDate" | "dueDate" | "deliveredAt";
+
+/** Dato que se lee como texto y se edita en su lugar; se guarda al cambiar. */
+export function InlineField({
+  pageId,
+  workId,
+  field,
+  label,
+  value,
+  options,
+  kind = "select",
+}: {
+  pageId: string;
+  workId: string;
+  field: WorkField;
+  label: string;
+  value?: string | number;
+  options?: readonly (string | number)[];
+  kind?: "select" | "date" | "text";
+}) {
+  const [editing, setEditing] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [pending, start] = useTransition();
+  const ref = useRef<HTMLInputElement & HTMLSelectElement>(null);
+  useEffect(() => {
+    if (editing) ref.current?.focus();
+  }, [editing]);
+  useEffect(() => {
+    if (!saved) return;
+    const t = setTimeout(() => setSaved(false), 1600);
+    return () => clearTimeout(t);
+  }, [saved]);
+
+  const shown = value === undefined || value === "" ? "—" : kind === "date" ? formatDate(String(value)) : String(value);
+  const save = (v: string) => {
+    setEditing(false);
+    if (v === String(value ?? "")) return;
+    start(async () => {
+      await setWorkField(pageId, workId, field, v);
+      setSaved(true);
+    });
+  };
+
+  return (
+    <div className="min-w-0">
+      <span className="block text-xs font-medium text-stone-500">{label}</span>
+      {editing ? (
+        kind === "select" ? (
+          <select
+            ref={ref}
+            defaultValue={String(value ?? "")}
+            onChange={(e) => save(e.target.value)}
+            onBlur={() => setEditing(false)}
+            onKeyDown={(e) => e.key === "Escape" && setEditing(false)}
+            className={`${inputCls} mt-0.5 py-1`}
+          >
+            {field === "storyPoints" && <option value="">—</option>}
+            {options?.map((o) => (
+              <option key={o} value={o}>
+                {o}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <input
+            ref={ref}
+            type={kind}
+            defaultValue={String(value ?? "")}
+            onBlur={(e) => save(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") save(e.currentTarget.value);
+              if (e.key === "Escape") setEditing(false);
+            }}
+            className={`${inputCls} mt-0.5 py-1`}
+          />
+        )
+      ) : (
+        <button
+          type="button"
+          onClick={() => setEditing(true)}
+          aria-label={`${label}: ${shown}. Editar`}
+          className={`-ml-1.5 flex min-h-9 max-w-full items-center gap-1.5 rounded-md px-1.5 text-left text-sm font-semibold hover:bg-stone-100 ${
+            shown === "—" ? "text-stone-500" : "text-stone-900"
+          } ${pending ? "opacity-50" : ""}`}
+        >
+          <span className="truncate">{shown}</span>
+          {saved && <Check aria-hidden className="size-3.5 text-emerald-700" />}
+        </button>
+      )}
+      <span aria-live="polite" className="sr-only">
+        {saved ? `${label} guardado` : ""}
+      </span>
+    </div>
+  );
+}
+
+// ── Bloqueo ──────────────────────────────────────────────────────────────────
+
+export function BlockToggle({
+  pageId,
+  workId,
+  blocked,
+}: {
+  pageId: string;
+  workId: string;
+  blocked?: { reason: string; since: string };
+}) {
+  const [open, setOpen] = useState(false);
+  const [pending, start] = useTransition();
+  if (blocked) {
+    return (
+      <div className="flex flex-wrap items-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-[#A32424]">
+        <Lock aria-hidden className="size-4" />
+        <span className="font-semibold">Bloqueado</span>
+        <span>
+          {blocked.reason} · desde {formatDate(blocked.since)}
+        </span>
+        <button
+          type="button"
+          disabled={pending}
+          onClick={() => {
+            const fd = new FormData();
+            fd.set("reason", "");
+            start(() => setBlocked(pageId, workId, fd));
+          }}
+          className="ml-auto inline-flex min-h-8 items-center gap-1 rounded-md px-2 font-semibold hover:bg-red-100"
+        >
+          <Unlock aria-hidden className="size-4" /> Desbloquear
+        </button>
+      </div>
+    );
+  }
+  if (!open) {
+    return (
+      <button type="button" onClick={() => setOpen(true)} className={btn.quiet}>
+        <Lock aria-hidden className="size-4" /> Bloquear
+      </button>
+    );
+  }
+  return (
+    <form
+      action={async (fd) => {
+        await setBlocked(pageId, workId, fd);
+        setOpen(false);
+      }}
+      className="flex w-full flex-wrap items-end gap-2 rounded-lg bg-stone-50 p-3"
+    >
+      <Field label="Motivo">
+        <select name="reason" required defaultValue="" className={inputCls} autoFocus>
+          <option value="" disabled>
+            Elige un motivo
+          </option>
+          {BLOCK_REASONS.map((r) => (
+            <option key={r}>{r}</option>
+          ))}
+        </select>
+      </Field>
+      <Field label="Detalle (opcional)" className="min-w-40 flex-1">
+        <input name="detail" className={inputCls} placeholder="Ej. esperando fotos del proyecto" />
+      </Field>
+      <SubmitButton variant="ghost">Bloquear</SubmitButton>
+      <button type="button" onClick={() => setOpen(false)} className={btn.quiet}>
+        Cancelar
+      </button>
+    </form>
+  );
+}
+
+// ── Ajustes y notas ──────────────────────────────────────────────────────────
+
+export function AddAdjustment({ pageId, label = "Ajuste" }: { pageId: string; label?: string }) {
+  const [open, setOpen] = useState(false);
+  if (!open) {
+    return (
+      <button type="button" onClick={() => setOpen(true)} className={btn.quiet}>
+        <Plus aria-hidden className="size-4" /> {label}
+      </button>
+    );
+  }
+  return (
+    <form
+      action={async (fd) => {
+        await addAdjustment(pageId, fd);
+        setOpen(false);
+      }}
+      className="flex items-center gap-2"
+    >
+      <label className="sr-only" htmlFor={`adj-${pageId}`}>
+        Nombre del ajuste
+      </label>
+      <input
+        id={`adj-${pageId}`}
+        name="title"
+        required
+        autoFocus
+        placeholder="Ej. Mejorar LCP del hero"
+        className={`${inputCls} w-56 py-1.5`}
+        onKeyDown={(e) => e.key === "Escape" && setOpen(false)}
+      />
+      <SubmitButton variant="ghost">Crear</SubmitButton>
+      <button type="button" aria-label="Cancelar" onClick={() => setOpen(false)} className={btn.quiet}>
+        <X aria-hidden className="size-4" />
+      </button>
+    </form>
+  );
+}
+
+export function NoteComposer({ pageId, actor }: { pageId: string; actor: Actor }) {
+  const [open, setOpen] = useState(false);
+  if (!open) {
+    return (
+      <button type="button" onClick={() => setOpen(true)} className={`${btn.ghost} w-full`}>
+        <Plus aria-hidden className="size-4" /> Agregar nota
+      </button>
+    );
+  }
+  return (
+    <form
+      action={async (fd) => {
+        await addNote(pageId, fd);
+        setOpen(false);
+      }}
+      className="space-y-2"
+    >
+      <Field label="Tipo">
+        <select name="kind" defaultValue={actor === "Admin" ? "Indicación del Admin" : "Decisión técnica"} className={inputCls}>
+          {NOTE_KINDS.map((k) => (
+            <option key={k}>{k}</option>
+          ))}
+        </select>
+      </Field>
+      <Field label="Nota">
+        <textarea name="body" rows={3} required autoFocus className={inputCls} placeholder="Ej. El mapa se cambió por imagen por rendimiento." />
+      </Field>
+      <div className="flex gap-2">
+        <SubmitButton>Guardar nota</SubmitButton>
+        <button type="button" onClick={() => setOpen(false)} className={btn.quiet}>
+          Cancelar
+        </button>
+      </div>
+    </form>
+  );
+}
+
+// ── QA y feedback ────────────────────────────────────────────────────────────
 
 const QA_NEXT: Record<QaStatus, QaStatus> = { Pendiente: "OK", OK: "N/A", "N/A": "Pendiente" };
 
@@ -135,32 +512,35 @@ export function QaToggle({
   status: QaStatus;
   label: string;
 }) {
-  const [optimistic, setOptimistic] = useState(status);
+  const [shown, setShown] = useState(status);
   const [, start] = useTransition();
-  const shown = optimistic;
   return (
     <button
       type="button"
+      role="checkbox"
+      aria-checked={shown === "OK" ? true : shown === "N/A" ? "mixed" : false}
+      aria-label={`${label}: ${shown === "N/A" ? "no aplica" : shown}`}
       onClick={() => {
         const next = QA_NEXT[shown];
-        setOptimistic(next);
+        setShown(next);
         start(() => setQa(pageId, workId, qaId, next));
       }}
-      className="flex w-full items-start gap-2 rounded-md px-1 py-0.5 text-left text-sm hover:bg-stone-50"
-      title="Clic: Pendiente → OK → N/A"
+      className="flex min-h-9 w-full items-center gap-2.5 rounded-md px-1.5 text-left text-sm hover:bg-stone-50"
     >
       <span
-        className={`mt-0.5 grid size-4 shrink-0 place-items-center rounded border text-[10px] font-bold ${
+        aria-hidden
+        className={`grid size-5 shrink-0 place-items-center rounded border ${
           shown === "OK"
-            ? "border-emerald-600 bg-emerald-600 text-white"
+            ? "border-emerald-700 bg-emerald-700 text-white"
             : shown === "N/A"
-              ? "border-stone-300 bg-stone-100 text-stone-400"
-              : "border-stone-300"
+              ? "border-stone-300 bg-stone-100 text-stone-500"
+              : "border-stone-400 bg-white"
         }`}
       >
-        {shown === "OK" ? "✓" : shown === "N/A" ? "–" : ""}
+        {shown === "OK" ? <Check className="size-3.5" /> : shown === "N/A" ? <Minus className="size-3.5" /> : null}
       </span>
-      <span className={shown === "N/A" ? "text-stone-400 line-through" : "text-stone-700"}>{label}</span>
+      <span className={shown === "N/A" ? "text-stone-500 line-through" : "text-stone-800"}>{label}</span>
+      {shown === "N/A" && <span className="ml-auto text-xs text-stone-500">No aplica</span>}
     </button>
   );
 }
@@ -176,19 +556,81 @@ export function DiscardFeedback({
   reviewId: string;
   feedbackId: string;
 }) {
+  const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
+  if (!open) {
+    return (
+      <button type="button" onClick={() => setOpen(true)} className={btn.quiet}>
+        <X aria-hidden className="size-4" /> Descartar
+      </button>
+    );
+  }
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        const reason = String(new FormData(e.currentTarget).get("reason") ?? "");
+        start(() => setFeedbackStatus(pageId, workId, reviewId, feedbackId, "Descartado", reason));
+      }}
+      className="flex w-full items-center gap-2 pt-1"
+    >
+      <label className="sr-only" htmlFor={`discard-${feedbackId}`}>
+        Motivo para descartar
+      </label>
+      <input
+        id={`discard-${feedbackId}`}
+        name="reason"
+        autoFocus
+        placeholder="¿Por qué se descarta? (opcional)"
+        className={`${inputCls} py-1.5`}
+        onKeyDown={(e) => e.key === "Escape" && setOpen(false)}
+      />
+      <button type="submit" disabled={pending} className={btn.ghost}>
+        Descartar
+      </button>
+      <button type="button" aria-label="Cancelar" onClick={() => setOpen(false)} className={btn.quiet}>
+        <X aria-hidden className="size-4" />
+      </button>
+    </form>
+  );
+}
+
+// ── Configuración de la página ───────────────────────────────────────────────
+
+/** Abre la sección de configuración y enfoca el campo indicado. */
+export function AddLinkButton({ field, children }: { field: string; children: ReactNode }) {
   return (
     <button
       type="button"
-      disabled={pending}
       onClick={() => {
-        const reason = window.prompt("¿Por qué se descarta este punto?");
-        if (reason === null) return;
-        start(() => setFeedbackStatus(pageId, workId, reviewId, feedbackId, "Descartado", reason));
+        const details = document.getElementById("config") as HTMLDetailsElement | null;
+        if (details) details.open = true;
+        const input = document.getElementById(`cfg-${field}`) as HTMLInputElement | null;
+        input?.scrollIntoView({ behavior: "smooth", block: "center" });
+        setTimeout(() => input?.focus(), 250);
       }}
-      className="rounded-md px-2 py-1 text-xs font-semibold text-stone-500 hover:bg-stone-100 hover:text-stone-900"
+      className="inline-flex min-h-9 items-center gap-1 rounded-lg border border-dashed border-stone-400 px-3 text-sm font-medium text-stone-600 transition-colors hover:border-stone-900 hover:text-stone-900"
     >
-      Descartar
+      <Plus aria-hidden className="size-3.5" />
+      {children}
     </button>
+  );
+}
+
+export function PageConfigForm({ pageId, children }: { pageId: string; children: ReactNode }) {
+  const [message, action] = useActionState(async (_: string, fd: FormData) => {
+    await updatePage(pageId, fd);
+    return `Guardado a las ${new Date().toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })}`;
+  }, "");
+  return (
+    <form action={action} className="grid gap-4 sm:grid-cols-2">
+      {children}
+      <div className="flex items-center gap-3 sm:col-span-2">
+        <SubmitButton>Guardar configuración</SubmitButton>
+        <span aria-live="polite" className="text-sm text-emerald-700">
+          {message}
+        </span>
+      </div>
+    </form>
   );
 }
